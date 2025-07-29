@@ -10,7 +10,7 @@ type Props = {
 
 const NavigationLink = (props: Props) => {
   return (
-    <Link to={props.to} style={{background: props.bg, color: props.textColor}}>{props.text}</Link>
+    <Link className="navLink" to={props.to} style={{background: props.bg, color: props.textColor}}>{props.text}</Link>
   )
 }
 
