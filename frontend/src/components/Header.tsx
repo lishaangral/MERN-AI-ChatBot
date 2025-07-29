@@ -18,7 +18,7 @@ const Header = () => {
             ) : (
             <>
                 <NavigationLink bg="#00ffc" to="/login" text="Login" textColor="white"/>
-                <NavigationLink bg="#595fffff" textColor="white" to="/signup" text="Signup" onClick={auth.logout} />
+                <NavigationLink bg="#595fffff" textColor="white" to="/signup" text="Signup" />
             </>
             )}</div>
     </div>
