@@ -5,7 +5,7 @@ async function connectToDatabase() {
         await connect(process.env.MONGODB_URL);
     } catch (error) {
         console.log(error);
-        throw new error("Cannot Connect to MonogoDB");
+        throw new Error("Cannot Connect to MonogoDB");
     }
 }
 
@@ -14,7 +14,7 @@ async function disconnectFromDatabase() {
         await disconnect();
     } catch (error) {
         console.log(error);
-        throw new error("Cannot Disconnect from MonogoDB");
+        throw new Error("Cannot Disconnect from MonogoDB");
     }
 }
 
