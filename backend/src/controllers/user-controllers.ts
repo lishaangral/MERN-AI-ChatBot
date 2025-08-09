@@ -67,8 +67,10 @@ export const userLogin = async (
     // user login
     try {
         const { email, password } = req.body;
-        const user = await User.findOne({ email });
+        const user = await User.findById(res.locals.jwtData.id);
         if (!user) return res.status(401).send("User not registered");
+
+        console.log(user._id.toString(), res.locals.jwtData.id);
         const isPasswordCorrect = await compare(password, user.password);
         if (!isPasswordCorrect) return res.status(403).send("Incorrect password");
 
@@ -89,8 +91,30 @@ export const userLogin = async (
             httpOnly: true,
             signed: true,
         });
+        return res.status(200).json({ message: "OK", name: user.name, email: user.email });
+    } catch (error) {
+        console.log(error);
+        return res.status(200).json({ message: "ERROR", cause: error.message }); 
+    }
+};
 
-        return res.status(201).json({ message: "OK", name: user.name, email: user.email });
+
+export const verifyUser = async (
+    req: Request, 
+    res: Response, 
+    next: NextFunction
+) => {
+    // user login
+    try {
+        const user = await User.findById(res.locals.jwtData.id);
+        if (!user) return res.status(401).send("User not registered or Token Malfunctioned");
+
+        if (user._id.toString() !== res.locals.jwtData.id) {
+            return res.status(401).send("Permissioms Didn't Match");
+        }
+        console.log(user._id.toString(), res.locals.jwtData.id);
+
+        return res.status(200).json({ message: "OK", name: user.name, email: user.email });
     } catch (error) {
         console.log(error);
         return res.status(200).json({ message: "ERROR", cause: error.message }); 
