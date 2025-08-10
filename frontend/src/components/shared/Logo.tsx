@@ -1,4 +1,3 @@
-import React from 'react'
 import {Link} from 'react-router-dom'
 
 const Logo = () => {
@@ -7,7 +6,6 @@ const Logo = () => {
         <Link to="/">
             <img src="vite.svg" alt="Logo" />
         </Link>
-        Logo
     </div>
   )
 }
