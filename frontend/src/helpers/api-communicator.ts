@@ -7,8 +7,8 @@ export const loginUser = async (email: string, password: string) => {
     if (res.status !== 200) {
         throw new Error("Unable to Login");
     }
-    const data = await res.data;
-    return data;
+    // const data = await res.data;
+    return res.data;
 };
 
 export const checkAuthStatus = async () => {
@@ -17,7 +17,7 @@ export const checkAuthStatus = async () => {
     if (res.status !== 200) {
         throw new Error("Unable to Authenticate");
     }
-    const data = await res.data;
-    return data;
+    
+    return res.data;
 };
 

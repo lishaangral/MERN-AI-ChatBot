@@ -46,7 +46,6 @@ export const userSignup = async (
         expires.setDate(expires.getDate() + 7);
         res.cookie(COOKIE_NAME, token, { 
             path: "/", 
-            domain: "localhost", 
             expires,
             httpOnly: true,
             signed: true,
@@ -67,16 +66,14 @@ export const userLogin = async (
     // user login
     try {
         const { email, password } = req.body;
-        const user = await User.findById(res.locals.jwtData.id);
+        const user = await User.findOne({email});
         if (!user) return res.status(401).send("User not registered");
 
-        console.log(user._id.toString(), res.locals.jwtData.id);
         const isPasswordCorrect = await compare(password, user.password);
         if (!isPasswordCorrect) return res.status(403).send("Incorrect password");
 
         res.clearCookie(COOKIE_NAME, {
             httpOnly: true,
-            domain: "localhost",
             signed: true,
             path: "/"
         });
@@ -86,7 +83,6 @@ export const userLogin = async (
         expires.setDate(expires.getDate() + 7);
         res.cookie(COOKIE_NAME, token, { 
             path: "/", 
-            domain: "localhost", 
             expires,
             httpOnly: true,
             signed: true,
@@ -104,7 +100,7 @@ export const verifyUser = async (
     res: Response, 
     next: NextFunction
 ) => {
-    // user login
+    // user token check
     try {
         const user = await User.findById(res.locals.jwtData.id);
         if (!user) return res.status(401).send("User not registered or Token Malfunctioned");
