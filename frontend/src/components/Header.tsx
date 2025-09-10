@@ -1,5 +1,5 @@
 import Logo from './shared/Logo'
-import { useAuth } from './context/AuthContext'
+import { useAuth } from '../context/AuthContext'
 import NavigationLink from './shared/NavigationLink';
 
 const Header = () => {

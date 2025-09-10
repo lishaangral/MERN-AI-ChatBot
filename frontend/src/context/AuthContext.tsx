@@ -1,5 +1,5 @@
-import {createContext, useContext, useEffect, useState, type ReactNode} from 'react'
-import { checkAuthStatus, loginUser } from '../../helpers/api-communicator';
+import {createContext, useEffect, useState, type ReactNode} from 'react'
+import { checkAuthStatus, loginUser, logoutUser, signupUser } from '../helpers/api-communicator';
 
 type User= {
     name: string,
@@ -39,8 +39,19 @@ export const AuthProvider = ({children}: {children: ReactNode}) => {
             setIsLoggedIn(true);
         }
     }
-    const signup = async(name: string, email: string, password: string) => {}
-    const logout = async() => {}
+    const signup = async (name: string, email: string, password: string) => {
+        const data = await signupUser(name, email, password);
+        if (data) {
+        setUser({ email: data.email, name: data.name });
+        setIsLoggedIn(true);
+        }
+    };
+    const logout = async () => {
+        await logoutUser();
+        setIsLoggedIn(false);
+        setUser(null);
+        window.location.reload();
+    };
 
     const value = {
         user, 
@@ -52,6 +63,4 @@ export const AuthProvider = ({children}: {children: ReactNode}) => {
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 };
 
-
-export const useAuth = () => useContext(AuthContext);
- 
+export default AuthContext;

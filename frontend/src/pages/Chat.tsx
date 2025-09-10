@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { useAuth } from '../components/context/AuthContext';
+import { useAuth } from '../context/useAuth.ts';
 import {IoMdSend} from 'react-icons/io';
 
 // type Message = {

@@ -1,6 +1,6 @@
 import React from 'react'
 import CustomizedInput from '../components/shared/CustomizedInput'
-import { useAuth } from '../components/context/AuthContext';
+import { useAuth } from '../context/AuthContext';
 import {toast} from 'react-hot-toast';
 
 const Login = () => {

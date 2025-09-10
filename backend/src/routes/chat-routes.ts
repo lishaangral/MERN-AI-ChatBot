@@ -7,4 +7,5 @@ import { generateChatCompletion } from "../controllers/chat-controllers.js";
 const chatRoutes = Router();
 chatRoutes.post("/new", validate(chatCompletionValidator), verifyToken, generateChatCompletion);
 
+
 export default chatRoutes;
