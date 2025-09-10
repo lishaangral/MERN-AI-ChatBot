@@ -1,33 +1,63 @@
+// backend/src/controllers/chat-controllers.ts (replace generateChatCompletion)
 import { NextFunction, Response, Request } from "express";
-import User from "../models/User.js";
+import Chat from "../models/Chat.js";
 import { configureGemini } from "../config/gemini-config.js";
 
 export const generateChatCompletion = async (req: Request, res: Response, next: NextFunction) => {
-  const { message } = req.body;
-
+  const { message, chatId } = req.body;
   try {
-    const user = await User.findById(res.locals.jwtData.id);
-    if (!user) return res.status(401).json({ message: "User not registered or Token Malfunctioned" });
+    const userId = res.locals.jwtData?.id;
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
-    const chats = user.chats.map(({ role, content }) => ({ role, parts: [{ text: content }] }));
-    chats.push({ role: "user", parts: [{ text: message }] });
-    user.chats.push({ role: "user", content: message });
+    // find or create chat
+    let chat = chatId ? await Chat.findOne({ _id: chatId, userId }) : null;
+    if (!chat) {
+      chat = await Chat.create({ userId, title: "New Chat", messages: [] });
+    }
+
+    // push user message
+    chat.messages.push({ role: "user", content: message });
+    await chat.save();
+
+    // map history to the Gemini format your configureGemini expects
+    const history = chat.messages.map(m => ({ role: m.role === "model" ? "model" : m.role, parts: [{ text: m.content }] }));
 
     const genAI = configureGemini();
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-    const chat = model.startChat({ history: chats });
-    const result = await chat.sendMessage(message);
+    const gChat = model.startChat({ history });
+    const result = await gChat.sendMessage(message);
 
-    const aiMessage = result.response.text();
+    // Extract the assistant text robustly:
+    let aiMessage = "";
+    try {
+      if (result?.response && typeof result.response.text === "function") {
+        aiMessage = result.response.text();
+      } else if (Array.isArray(result?.output) && result.output.length > 0) {
+        // fallback if SDK returns output blocks
+        aiMessage = (result.output[0].content?.parts && result.output[0].content.parts[0]) || "";
+      } else if (result?.candidates && result.candidates[0]) {
+        aiMessage = result.candidates[0].content?.parts?.[0] || "";
+      } else if (result?.outputText) {
+        aiMessage = result.outputText;
+      } else {
+        aiMessage = JSON.stringify(result).slice(0, 1000);
+      }
+    } catch (ex) {
+      console.warn("Could not parse Gemini result:", ex);
+      aiMessage = "";
+    }
 
-    user.chats.push({ role: "model", content: aiMessage });
-    await user.save();
+    // save model response
+    chat.messages.push({ role: "model", content: aiMessage });
+    if (!chat.title || chat.title === "New Chat") {
+      chat.title = message.length > 30 ? message.slice(0, 30) + "..." : message;
+    }
+    await chat.save();
 
-    return res.status(200).json({ chats: user.chats });
-
+    return res.status(200).json({ chat });
   } catch (error) {
-    console.error(error);
+    console.error("generateChatCompletion error:", error?.response || error);
     return res.status(500).json({ message: "Something went wrong" });
   }
 };

@@ -1,11 +1,19 @@
 {
   "compilerOptions": {
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
-    "target": "ES2022",
-    "sourceMap": true,
-    "outDir": "dist",
-    "allowSyntheticDefaultImports": true
+    "target": "ES2020",
+    "lib": ["ESNext", "DOM"],
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "jsx": "react-jsx",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "types": ["vite/client"]
   },
-  "include": ["src/**/*.ts", "src/index.ts"]
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
 }

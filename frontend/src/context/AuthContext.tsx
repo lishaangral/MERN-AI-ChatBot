@@ -47,10 +47,16 @@ export const AuthProvider = ({children}: {children: ReactNode}) => {
         }
     };
     const logout = async () => {
-        await logoutUser();
-        setIsLoggedIn(false);
-        setUser(null);
-        window.location.reload();
+        try {
+            await logoutUser(); // this calls backend /user/logout
+            setIsLoggedIn(false);
+            setUser(null);
+            return true;
+        } catch (err) {
+            console.error("Logout failed", err);
+            // keep previous state if logout fails
+            return false;
+        }
     };
 
     const value = {

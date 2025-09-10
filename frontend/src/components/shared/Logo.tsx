@@ -4,7 +4,8 @@ const Logo = () => {
   return (
     <div>
         <Link to="/">
-            <img src="vite.svg" alt="Logo" />
+        <div className="avatar">🤖</div>
+            {/* <img src="vite.svg" alt="Logo" /> */}
         </Link>
     </div>
   )
