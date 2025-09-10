@@ -235,7 +235,7 @@ const Chat: React.FC = () => {
         {/* No active chat at all -> show full welcome */}
         {!activeChat ? (
           <div className="welcome-area" style={{ padding: 24, textAlign: "center" }}>
-            <h1>Good afternoon, {auth?.user?.name}</h1>
+            <h1>Welcome, {auth?.user?.name}</h1>
             <p>What can I help you with today?</p>
             <div className="starter-cards" style={{ display: "flex", gap: 18, justifyContent: "center", marginTop: 28 }}>
               <div className="card">Create an image</div>
@@ -249,7 +249,7 @@ const Chat: React.FC = () => {
             {/* If chat exists but empty show helper tiles (optional), composer always visible */}
             {activeChat.messages.length === 0 && (
               <div className="welcome-area" style={{ padding: 24, textAlign: "center" }}>
-                <h1>Good afternoon, {auth?.user?.name}</h1>
+                <h1>Welcome, {auth?.user?.name}</h1>
                 <p>What can I help you with today?</p>
                 <div className="starter-cards" style={{ display: "flex", gap: 18, justifyContent: "center", marginTop: 28 }}>
                   <div className="card" style={{ cursor: "pointer" }} onClick={() => handleTileClick("I want to learn a language.")}>Learn a language</div>
