@@ -2,9 +2,8 @@
 import React, { useState } from "react";
 import Logo from "./shared/Logo";
 import { useAuth } from "../context/useAuth";
-import NavigationLink from "./shared/NavigationLink";
 import ConfirmModal from "./shared/ConfirmModal";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { toast } from "react-hot-toast";
 
 const Header: React.FC = () => {
@@ -36,30 +35,34 @@ const Header: React.FC = () => {
       <header className="app-header">
         <div className="app-header-inner">
           <div className="header-left">
-            <div className="logo-wrapper" aria-hidden>
+            <div className="logo-wrapper">
               <Logo />
             </div>
           </div>
 
           <div className="header-right">
-            {/* desktop nav */}
             <nav className="nav-links">
               {auth?.isLoggedIn ? (
                 <>
-                  <NavigationLink bg="#00ffcc" to="/chat" text="Go To Chat" textColor="#042" />
+                  <Link to="/chat">
+                    <button className="nav-button nav-button-primary">Go To Chat</button>
+                  </Link>
                   <button
                     type="button"
                     className="nav-button nav-button-ghost"
                     onClick={onLogoutClick}
-                    aria-label="Logout"
                   >
                     Logout
                   </button>
                 </>
               ) : (
                 <>
-                  <NavigationLink bg="#00ffcc" to="/login" text="Login" textColor="#042" />
-                  <NavigationLink bg="#595fffff" to="/signup" text="Signup" textColor="#fff" />
+                  <Link to="/login">
+                    <button className="nav-button nav-button-primary">Login</button>
+                  </Link>
+                  <Link to="/signup">
+                    <button className="nav-button nav-button-secondary">Signup</button>
+                  </Link>
                 </>
               )}
             </nav>

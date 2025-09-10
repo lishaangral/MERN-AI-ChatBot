@@ -15,6 +15,8 @@ type Props = {
   onToggle?: () => void; // toggle open/close
 };
 
+const HEADER_HEIGHT_PX = 64; // keep in sync with App.css header height
+
 const Sidebar: React.FC<Props> = ({
   conversations,
   setConversations,
@@ -25,7 +27,7 @@ const Sidebar: React.FC<Props> = ({
   isOpen = true,
   onToggle,
 }) => {
-  // close on Escape
+  // close on Escape when sidebar is open
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape" && isOpen && onToggle) {
@@ -38,13 +40,16 @@ const Sidebar: React.FC<Props> = ({
 
   return (
     <>
-      {/* Overlay (click to close) */}
+      {/* Overlay */}
       <div
         aria-hidden={!isOpen}
         onClick={() => onToggle && onToggle()}
         style={{
           position: "fixed",
-          inset: 0,
+          left: 0,
+          right: 0,
+          top: HEADER_HEIGHT_PX,
+          bottom: 0,
           background: isOpen ? "rgba(0,0,0,0.35)" : "transparent",
           opacity: isOpen ? 1 : 0,
           pointerEvents: isOpen ? "auto" : "none",
@@ -59,7 +64,7 @@ const Sidebar: React.FC<Props> = ({
         style={{
           position: "fixed",
           left: 0,
-          top: 0,
+          top: HEADER_HEIGHT_PX, // <-- place below header
           bottom: 0,
           width: 280,
           background: "#0b1116",
@@ -85,6 +90,8 @@ const Sidebar: React.FC<Props> = ({
             type="button"
             onClick={() => onToggle && onToggle()}
             aria-label={isOpen ? "Close sidebar" : "Open sidebar"}
+            className="sidebar-toggle"
+            data-testid="sidebar-toggle"
             style={{
               background: "transparent",
               border: "none",
@@ -96,6 +103,7 @@ const Sidebar: React.FC<Props> = ({
             <Menu size={18} />
           </button>
 
+          {/* NEW CHAT BUTTON - always rendered */}
           <button
             type="button"
             onClick={createNewConversation}
@@ -110,6 +118,8 @@ const Sidebar: React.FC<Props> = ({
               background: "rgba(255,255,255,0.02)",
               cursor: "pointer",
             }}
+            aria-label="Create new chat"
+            data-testid="new-chat-btn"
           >
             <Plus size={14} />
             <span style={{ fontSize: 14 }}>New chat</span>
@@ -128,6 +138,9 @@ const Sidebar: React.FC<Props> = ({
                 key={conv.id}
                 className={`conversation-item ${activeConversation === conv.id ? "active" : ""}`}
                 onClick={() => setActiveConversation(conv.id)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === "Enter") setActiveConversation(conv.id); }}
                 style={{
                   display: "flex",
                   justifyContent: "space-between",
@@ -162,6 +175,7 @@ const Sidebar: React.FC<Props> = ({
                       cursor: "pointer",
                     }}
                     aria-label="Delete conversation"
+                    data-testid={`delete-${conv.id}`}
                   >
                     <Trash2 size={14} />
                   </button>

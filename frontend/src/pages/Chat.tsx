@@ -193,13 +193,13 @@ const Chat: React.FC = () => {
       {/* Sidebar */}
       <Sidebar
         conversations={chats}
-        setConversations={(c: any[]) => setChats(c)}
+        setConversations={(c) => setChats(c)}
         activeConversation={activeChatId}
-        setActiveConversation={(id: string | null) => setActiveChatId(id)}
+        setActiveConversation={(id) => setActiveChatId(id)}
         createNewConversation={handleCreate}
         deleteConversation={handleDelete}
         isOpen={isSidebarOpen}
-        onToggle={() => setIsSidebarOpen(false)}
+        onToggle={() => setIsSidebarOpen(prev => !prev)}
       />
 
       {/* Main area */}
