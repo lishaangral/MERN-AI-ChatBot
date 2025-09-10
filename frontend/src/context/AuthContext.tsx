@@ -7,12 +7,12 @@ type User= {
 }
 
 type UserAuth = {
-    isLoggedIn: boolean;
-    user: User | null;
-    login: (email: string, password: string)=> Promise<void>;
-    signup: (name: string, email: string, password: string)=> Promise<void>;
-    logout: () => Promise<void>;
-}
+  isLoggedIn: boolean;
+  user: User | null;
+  login: (email: string, password: string) => Promise<void>;
+  signup: (name: string, email: string, password: string) => Promise<void>;
+  logout: () => Promise<boolean>; // return boolean to reflect actual implementation
+};
 
 const AuthContext = createContext<UserAuth | null>(null);
 
