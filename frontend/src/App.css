@@ -16,6 +16,88 @@ body,html,#root{
   color: #e6eef6;
 }
 
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  backdrop-filter: blur(6px);
+  background: linear-gradient(180deg, rgba(11,17,22,0.9), rgba(11,17,22,0.85));
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  box-shadow: 0 2px 6px rgba(2,6,23,0.6);
+}
+
+.app-header-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 10px 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-left { display: flex; align-items: center; gap: 12px; }
+.header-right { margin-left: auto; display: flex; align-items: center; }
+
+/* logo sizing: adjust if your Logo component needs it */
+.logo-wrapper svg, .logo-wrapper img { height: 38px; width: auto; display: block; }
+
+/* nav links layout */
+.nav-links {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+/* button base */
+.nav-button {
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ghost / secondary button (transparent panel style) */
+.nav-button-ghost {
+  background: rgba(255,255,255,0.03);
+  color: #e6eef6;
+  border: 1px solid rgba(255,255,255,0.03);
+}
+
+/* Small responsive tweaks */
+@media (max-width: 760px) {
+  .app-header-inner { padding: 8px 12px; }
+  .nav-links { gap: 8px; }
+  .logo-wrapper svg, .logo-wrapper img { height: 32px; }
+}
+
+/* Ensure nav link component aligns visually when it outputs <a> */
+.nav-links a, .nav-links button {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* Improve contrast for NavigationLink buttons that pass custom colors */
+.nav-links .navlink-cta {
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-weight: 600;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Optionally adjust react-hot-toast top offset so toasts don't sit under header */
+.__react_hot_toast_container {
+  top: 64px !important;
+  right: 18px !important;
+}
+
 .chat-page{ display:flex; height:100vh; overflow:hidden; }
 
 /* Sidebar */

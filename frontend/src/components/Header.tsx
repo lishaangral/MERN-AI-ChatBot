@@ -5,64 +5,67 @@ import { useAuth } from "../context/useAuth";
 import NavigationLink from "./shared/NavigationLink";
 import ConfirmModal from "./shared/ConfirmModal";
 import { useNavigate } from "react-router-dom";
-import { toast } from "react-hot-toast"; 
+import { toast } from "react-hot-toast";
 
 const Header: React.FC = () => {
   const auth = useAuth();
   const navigate = useNavigate();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
-  const onLogoutClick = () => {
-    setShowLogoutConfirm(true);
-  };
+  const onLogoutClick = () => setShowLogoutConfirm(true);
 
   const onConfirmLogout = async () => {
     setShowLogoutConfirm(false);
     try {
       const ok = await auth?.logout();
       if (ok) {
-        toast.success("Logged out successfully");   // 👈 show success
+        toast.success("Logged out successfully");
         navigate("/");
       } else {
-        toast.error("Logout failed");               // 👈 show error
+        toast.error("Logout failed");
       }
     } catch (err) {
       console.error("Logout error", err);
       toast.error("Logout error");
-      navigate("/"); // still go home defensively
+      navigate("/");
     }
   };
-  
+
   return (
-    <header style={{ display: "flex", alignItems: "center", padding: 12 }}>
-      <Logo />
-      <div style={{ flex: 1 }} />
-      <nav style={{ display: "flex", gap: 8, alignItems: "center" }}>
-        {auth?.isLoggedIn ? (
-          <>
-            <NavigationLink bg="#00ffcc" to="/chat" text="Go To Chat" textColor="white" />
-            <button
-              type="button"
-              onClick={onLogoutClick}
-              style={{
-                background: "#595fffff",
-                color: "white",
-                borderRadius: 8,
-                border: "none",
-                padding: "8px 12px",
-                cursor: "pointer",
-              }}
-            >
-              Logout
-            </button>
-          </>
-        ) : (
-          <>
-            <NavigationLink bg="#00ffcc" to="/login" text="Login" textColor="white" />
-            <NavigationLink bg="#595fffff" textColor="white" to="/signup" text="Signup" />
-          </>
-        )}
-      </nav>
+    <>
+      <header className="app-header">
+        <div className="app-header-inner">
+          <div className="header-left">
+            <div className="logo-wrapper" aria-hidden>
+              <Logo />
+            </div>
+          </div>
+
+          <div className="header-right">
+            {/* desktop nav */}
+            <nav className="nav-links">
+              {auth?.isLoggedIn ? (
+                <>
+                  <NavigationLink bg="#00ffcc" to="/chat" text="Go To Chat" textColor="#042" />
+                  <button
+                    type="button"
+                    className="nav-button nav-button-ghost"
+                    onClick={onLogoutClick}
+                    aria-label="Logout"
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <>
+                  <NavigationLink bg="#00ffcc" to="/login" text="Login" textColor="#042" />
+                  <NavigationLink bg="#595fffff" to="/signup" text="Signup" textColor="#fff" />
+                </>
+              )}
+            </nav>
+          </div>
+        </div>
+      </header>
 
       <ConfirmModal
         open={showLogoutConfirm}
@@ -71,7 +74,7 @@ const Header: React.FC = () => {
         onConfirm={onConfirmLogout}
         onCancel={() => setShowLogoutConfirm(false)}
       />
-    </header>
+    </>
   );
 };
 
