@@ -13,6 +13,8 @@
     "strict": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
+    "outDir": "./build-tsc",
+    "declaration": true,
     "types": ["vite/client", "node", "react", "react-dom"]
   },
   "include": ["src"],
