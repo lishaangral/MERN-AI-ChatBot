@@ -11,10 +11,28 @@ const app = express();
 // POST - create some data
 // DELETE - delete some data
 
-const CORS_ORIGIN = process.env.CORS_ORIGIN ?? "http://localhost:5173";
+const CORS_ORIGIN = process.env.CORS_ORIGIN;
+const allowedOrigins = [
+  "http://localhost:5173",
+  CORS_ORIGIN
+];
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+  })
+);
+
 
 // middleware to parse JSON bodies
-app.use(cors({origin: CORS_ORIGIN, credentials: true}));
+// app.use(cors({origin: CORS_ORIGIN, credentials: true}));
 app.use(express.json());
 app.use(cookieParser(process.env.COOKIE_SECRET));
 // remove it during production

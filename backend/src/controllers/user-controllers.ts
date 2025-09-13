@@ -37,6 +37,8 @@ export const userSignup = async (
         // create token and store cookie
         res.clearCookie(COOKIE_NAME, {
         httpOnly: true,
+        secure: true,
+        sameSite: 'none',
         // domain: "localhost",
         signed: true,
         path: "/"
@@ -50,6 +52,8 @@ export const userSignup = async (
             expires,
             httpOnly: true,
             signed: true,
+            secure: true,
+            sameSite: 'none'
         });
 
         return res.status(201).json({ message: "OK", name: user.name, email: user.email });
@@ -77,7 +81,9 @@ export const userLogin = async (
         res.clearCookie(COOKIE_NAME, {
             httpOnly: true,
             signed: true,
-            path: "/"
+            path: "/",
+            secure: true,
+            sameSite: 'none'
         });
 
         const token = createToken(user._id.toString(), user.email, "7d");
@@ -88,6 +94,8 @@ export const userLogin = async (
             expires,
             httpOnly: true,
             signed: true,
+            secure: true,
+            sameSite: 'none'
         });
         return res.status(200).json({ message: "OK", name: user.name, email: user.email });
     } catch (error: any) {
@@ -139,6 +147,8 @@ export const userLogout = async (
     //   domain: "localhost",
       signed: true,
       path: "/",
+      secure: true, 
+      sameSite: 'none'
     });
 
     return res
