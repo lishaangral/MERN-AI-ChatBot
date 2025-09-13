@@ -24,3 +24,4 @@ dist-ssr
 *.sw?
 /src/**/*.js
 /src/**/*.js.map
+**package-lock.json
