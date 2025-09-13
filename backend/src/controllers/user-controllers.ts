@@ -13,10 +13,11 @@ export const getAllUsers = async (
     try {
         const users = await User.find();
         return res.status(200).json({ message: "OK", users });
-    } catch (error) {
+    } catch (error: any) {
         console.log(error);
-        return res.status(200).json({ message: "ERROR", cause: error.message}); 
+        return res.status(200).json({ message: "ERROR", cause: error?.message || String(error) });
     }
+
 };
 
 export const userSignup = async (
@@ -52,10 +53,11 @@ export const userSignup = async (
         });
 
         return res.status(201).json({ message: "OK", name: user.name, email: user.email });
-    } catch (error) {
+    } catch (error: any) {
         console.log(error);
-        return res.status(200).json({ message: "ERROR", cause: error.message }); 
+        return res.status(200).json({ message: "ERROR", cause: error?.message || String(error) });
     }
+
 };
 
 export const userLogin = async (
@@ -88,9 +90,9 @@ export const userLogin = async (
             signed: true,
         });
         return res.status(200).json({ message: "OK", name: user.name, email: user.email });
-    } catch (error) {
+    } catch (error: any) {
         console.log(error);
-        return res.status(200).json({ message: "ERROR", cause: error.message }); 
+        return res.status(200).json({ message: "ERROR", cause: error?.message || String(error) });
     }
 };
 
@@ -111,9 +113,9 @@ export const verifyUser = async (
         console.log(user._id.toString(), res.locals.jwtData.id);
 
         return res.status(200).json({ message: "OK", name: user.name, email: user.email });
-    } catch (error) {
+    } catch (error: any) {
         console.log(error);
-        return res.status(200).json({ message: "ERROR", cause: error.message }); 
+        return res.status(200).json({ message: "ERROR", cause: error?.message || String(error) });
     }
 };
 
@@ -142,9 +144,9 @@ export const userLogout = async (
     return res
       .status(200)
       .json({ message: "OK", name: user.name, email: user.email });
-  } catch (error) {
+  } catch (error: any) {
     console.log(error);
-    return res.status(200).json({ message: "ERROR", cause: error.message });
+    return res.status(200).json({ message: "ERROR", cause: error?.message || String(error) });
   }
 };
 

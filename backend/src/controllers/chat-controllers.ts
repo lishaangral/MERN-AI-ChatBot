@@ -31,20 +31,21 @@ export const generateChatCompletion = async (req: Request, res: Response, next: 
     // Extract the assistant text robustly:
     let aiMessage = "";
     try {
-      if (result?.response && typeof result.response.text === "function") {
-        aiMessage = result.response.text();
-      } else if (Array.isArray(result?.output) && result.output.length > 0) {
+      const r: any = result;
+      if (r?.response && typeof r.response.text === "function") {
+        aiMessage = r.response.text();
+      } else if (Array.isArray(r?.output) && r.output.length > 0) {
         // fallback if SDK returns output blocks
-        aiMessage = (result.output[0].content?.parts && result.output[0].content.parts[0]) || "";
-      } else if (result?.candidates && result.candidates[0]) {
-        aiMessage = result.candidates[0].content?.parts?.[0] || "";
-      } else if (result?.outputText) {
-        aiMessage = result.outputText;
+        aiMessage = (r.output[0].content?.parts && r.output[0].content.parts[0]) || "";
+      } else if (r?.candidates && r.candidates[0]) {
+        aiMessage = r.candidates[0].content?.parts?.[0] || "";
+      } else if (r?.outputText) {
+        aiMessage = r.outputText;
       } else {
-        aiMessage = JSON.stringify(result).slice(0, 1000);
+        aiMessage = JSON.stringify(r).slice(0, 1000);
       }
     } catch (ex) {
-      console.warn("Could not parse Gemini result:", ex);
+      console.warn("Could not parse Gemini r:", ex);
       aiMessage = "";
     }
 
@@ -57,7 +58,7 @@ export const generateChatCompletion = async (req: Request, res: Response, next: 
 
     return res.status(200).json({ chat });
   } catch (error) {
-    console.error("generateChatCompletion error:", error?.response || error);
+    console.error("generateChatCompletion error:", (error as any)?.response || error);
     return res.status(500).json({ message: "Something went wrong" });
   }
 };
