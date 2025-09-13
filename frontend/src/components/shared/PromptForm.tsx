@@ -1,10 +1,10 @@
-// frontend/src/components/shared/PromptForm.tsx
 import React, { useState } from "react";
 import { ArrowUp } from "lucide-react";
 import { sendChatRequest, createChatAPI } from "../../helpers/api-communicator";
 
 type Props = {
-  activeChatId?: string | null;
+  // switched to optional string (no explicit `null`)
+  activeChatId?: string;
   onNewMessage: (msg: any) => void;
   setIsLoading: (b: boolean) => void;
 };
@@ -18,11 +18,12 @@ const PromptForm: React.FC<Props> = ({ activeChatId, onNewMessage, setIsLoading 
     setIsLoading(true);
 
     // ensure chat exists: if no activeChatId, create one
-    let chatId = activeChatId;
+    // important: treat null as undefined by using '?? undefined'
+    let chatId: string | undefined = activeChatId ?? undefined;
     try {
       if (!chatId) {
         const created = await createChatAPI();
-        chatId = created.chat._id || created.chat.id;
+        chatId = created.chat._id || created.chat.id || undefined;
       }
 
       // optimistic: append user message
@@ -35,6 +36,7 @@ const PromptForm: React.FC<Props> = ({ activeChatId, onNewMessage, setIsLoading 
       onNewMessage(thinking);
 
       // send to backend
+      // now chatId is string | undefined which matches functions expecting string|undefined
       const res = await sendChatRequest(text, chatId);
       // backend returns { chat }
       const returnedChat = res.chat;

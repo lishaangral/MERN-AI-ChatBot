@@ -1,4 +1,3 @@
-// frontend/src/pages/Chat.tsx
 import React, { useEffect, useState, useRef } from "react";
 import { Menu } from "lucide-react";
 import { useAuth } from "../context/useAuth";
@@ -24,7 +23,8 @@ type MessageType = {
 const Chat: React.FC = () => {
   const auth = useAuth();
   const [chats, setChats] = useState<any[]>([]);
-  const [activeChatId, setActiveChatId] = useState<string | null>(null);
+  // change: use undefined rather than null so other helpers expecting `string | undefined` accept it
+  const [activeChatId, setActiveChatId] = useState<string | undefined>(undefined);
   const [activeChat, setActiveChat] = useState<{ id: string; title: string; messages: MessageType[] } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(() => window.innerWidth > 768);
@@ -61,7 +61,7 @@ const Chat: React.FC = () => {
     try {
       const res = await getUserChats();
       setChats(res.chats || []);
-      if (selectId) setActiveChatId(selectId);
+      if (selectId) setActiveChatId(selectId ?? undefined);
       else if (res.chats && res.chats.length > 0 && !activeChatId) setActiveChatId(res.chats[0].id);
     } catch (err) {
       console.error("reloadChatsAndSelect error", err);
@@ -105,7 +105,7 @@ const Chat: React.FC = () => {
     try {
       await deleteChatById(id);
       if (activeChatId === id) {
-        setActiveChatId(null);
+        setActiveChatId(undefined);
         setActiveChat(null);
       }
       await reloadChatsAndSelect();
@@ -195,7 +195,7 @@ const Chat: React.FC = () => {
         conversations={chats}
         setConversations={(c) => setChats(c)}
         activeConversation={activeChatId}
-        setActiveConversation={(id) => setActiveChatId(id)}
+        setActiveConversation={(id) => setActiveChatId(id ?? undefined)}
         createNewConversation={handleCreate}
         deleteConversation={handleDelete}
         isOpen={isSidebarOpen}
@@ -275,7 +275,8 @@ const Chat: React.FC = () => {
             {/* Composer always visible when a chat exists */}
             <div className="composer" style={{ padding: 12, borderTop: "1px solid rgba(255,255,255,0.04)" }}>
               <PromptForm
-                activeChatId={activeChat.id}
+                // safe: activeChat may be null, so use optional chaining to pass string | undefined
+                activeChatId={activeChat?.id}
                 onNewMessage={(payload: any) => {
                   if (payload.replaceId) {
                     replaceMessageInActiveChat(payload.replaceId, payload.message);

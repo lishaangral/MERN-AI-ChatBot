@@ -13,7 +13,7 @@ type Props = { source: string };
 type CodeRendererProps = {
   inline?: boolean;
   className?: string | undefined;
-  children: React.ReactNode;
+  children?: React.ReactNode;
   node?: unknown;
   [key: string]: unknown;
 };
@@ -23,10 +23,8 @@ const CodeRenderer: React.FC<Props> = ({ source }) => {
   // many versions include 'oneDark' -> try that first, otherwise fallback to a known style key
   const syntaxStyle: any = (prismStyles as any).oneDark ?? (prismStyles as any).atomDark ?? (prismStyles as any).prism;
 
-  const components: {
-    code: (props: CodeRendererProps) => JSX.Element | null;
-    [key: string]: unknown;
-  } = {
+  // <-- small change here: loosen the type so TS doesn't try to match a very specific JSX namespace type
+  const components: Record<string, any> = {
     code(props: CodeRendererProps) {
       const { inline, className, children } = props;
       const cls = (className ?? "").toString();
