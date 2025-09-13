@@ -5,10 +5,10 @@
   "main": "index.ts",
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"npx tsc --watch\" \"nodemon -q dist/index.js\" ",
-    "build": "tsc",
-    "start": "node dist/index.js"
-  },
+  "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+  "build": "tsc -p ./tsconfig.json",
+  "start": "node dist/index.js"
+},
   "keywords": [],
   "author": "",
   "license": "ISC",
