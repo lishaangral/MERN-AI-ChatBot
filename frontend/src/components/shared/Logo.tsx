@@ -5,7 +5,6 @@ const Logo = () => {
     <div>
         <Link to="/">
         <div className="avatar">🤖</div>
-            {/* <img src="vite.svg" alt="Logo" /> */}
         </Link>
     </div>
   )

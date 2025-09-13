@@ -2,7 +2,7 @@ import { config } from "dotenv";
 // Load env as early as possible
 config();
 
-import app from "./app.js";
+import app from "./app";
 import { connectToDatabase } from "./db/connection.js";
 
 // connections and listeners

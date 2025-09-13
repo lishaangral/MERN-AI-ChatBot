@@ -1,7 +1,7 @@
 // backend/src/controllers/chat-controllers.ts (replace generateChatCompletion)
 import { NextFunction, Response, Request } from "express";
-import Chat from "../models/Chat.js";
-import { configureGemini } from "../config/gemini-config.js";
+import Chat from "../models/Chat";
+import { configureGemini } from "../config/gemini-config";
 
 export const generateChatCompletion = async (req: Request, res: Response, next: NextFunction) => {
   const { message, chatId } = req.body;
