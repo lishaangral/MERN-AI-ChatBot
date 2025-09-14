@@ -40,6 +40,7 @@ export const getUserChats = async () => {
   return res.data;
 };
 
+
 export const getChatById = async (chatId: string) => {
   const res = await axios.get(`/chat/${chatId}`);
   if (res.status !== 200) throw new Error("Unable to fetch chat");

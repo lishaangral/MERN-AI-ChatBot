@@ -1,6 +1,7 @@
 // backend/src/controllers/chat-controllers.ts (replace generateChatCompletion)
 import { NextFunction, Response, Request } from "express";
 import Chat from "../models/Chat";
+import mongoose from 'mongoose';
 import { configureGemini } from "../config/gemini-config";
 
 export const generateChatCompletion = async (req: Request, res: Response, next: NextFunction) => {
@@ -10,7 +11,7 @@ export const generateChatCompletion = async (req: Request, res: Response, next: 
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
     // find or create chat
-    let chat = chatId ? await Chat.findOne({ _id: chatId, userId }) : null;
+    let chat = chatId ? await Chat.findOne({ id: chatId, userId }) : null;
     if (!chat) {
       chat = await Chat.create({ userId, title: "New Chat", messages: [] });
     }
@@ -60,5 +61,78 @@ export const generateChatCompletion = async (req: Request, res: Response, next: 
   } catch (error) {
     console.error("generateChatCompletion error:", (error as any)?.response || error);
     return res.status(500).json({ message: "Something went wrong" });
+  }
+};
+
+export const createChat = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = res.locals.jwtData?.id;
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
+
+    const chat = await Chat.create({ userId: new mongoose.Types.ObjectId(userId), title: "New Chat", messages: [] });
+    return res.status(201).json({ chat: { id: chat._id.toString(), title: chat.title, messages: chat.messages } });
+  } catch (err: any) {
+    console.error("createChat error:", err);
+    return res.status(500).json({ message: "Unable to create chat" });
+  }
+};
+
+export const getAllChats = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = res.locals.jwtData?.id;
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
+
+    const chats = await Chat.find({ userId }).sort({ createdAt: -1 }).lean();
+    // normalize shape expected by frontend
+    const normalized = chats.map((c: any) => ({ id: c._id.toString(), title: c.title, messages: c.messages || [] }));
+    return res.status(200).json({ chats: normalized });
+  } catch (err: any) {
+    console.error("getAllChats error:", err);
+    return res.status(500).json({ message: "Unable to fetch chats" });
+  }
+};
+
+export const getChat = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = res.locals.jwtData?.id;
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
+
+    const chatId = req.params.id;
+    const chat = await Chat.findOne({ _id: chatId, userId });
+    if (!chat) return res.status(404).json({ message: "Chat not found" });
+
+    return res.status(200).json({ chat: { id: chat._id.toString(), title: chat.title, messages: chat.messages } });
+  } catch (err: any) {
+    console.error("getChat error:", err);
+    return res.status(500).json({ message: "Unable to fetch chat" });
+  }
+};
+
+export const deleteChat = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = res.locals.jwtData?.id;
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
+
+    const chatId = req.params.id;
+    const deleted = await Chat.findOneAndDelete({ _id: chatId, userId });
+    if (!deleted) return res.status(404).json({ message: "Chat not found or not owned by user" });
+
+    return res.status(200).json({ message: "OK" });
+  } catch (err: any) {
+    console.error("deleteChat error:", err);
+    return res.status(500).json({ message: "Unable to delete chat" });
+  }
+};
+
+export const deleteAllChats = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = res.locals.jwtData?.id;
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
+
+    await Chat.deleteMany({ userId });
+    return res.status(200).json({ message: "OK" });
+  } catch (err: any) {
+    console.error("deleteAllChats error:", err);
+    return res.status(500).json({ message: "Unable to delete chats" });
   }
 };

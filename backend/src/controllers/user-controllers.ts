@@ -44,7 +44,7 @@ export const userSignup = async (
         path: "/"
         });
 
-        const token = createToken(user._id.toString(), user.email, "7d");
+        const token = createToken(user.id.toString(), user.email, "7d");
         const expires = new Date();
         expires.setDate(expires.getDate() + 7);
         res.cookie(COOKIE_NAME, token, { 
@@ -86,7 +86,7 @@ export const userLogin = async (
             sameSite: 'none'
         });
 
-        const token = createToken(user._id.toString(), user.email, "7d");
+        const token = createToken(user.id.toString(), user.email, "7d");
         const expires = new Date();
         expires.setDate(expires.getDate() + 7);
         res.cookie(COOKIE_NAME, token, { 
@@ -115,10 +115,10 @@ export const verifyUser = async (
         const user = await User.findById(res.locals.jwtData.id);
         if (!user) return res.status(401).send("User not registered or Token Malfunctioned");
 
-        if (user._id.toString() !== res.locals.jwtData.id) {
+        if (user.id.toString() !== res.locals.jwtData.id) {
             return res.status(401).send("Permissioms Didn't Match");
         }
-        console.log(user._id.toString(), res.locals.jwtData.id);
+        console.log(user.id.toString(), res.locals.jwtData.id);
 
         return res.status(200).json({ message: "OK", name: user.name, email: user.email });
     } catch (error: any) {
@@ -138,7 +138,7 @@ export const userLogout = async (
     if (!user) {
       return res.status(401).send("User not registered OR Token malfunctioned");
     }
-    if (user._id.toString() !== res.locals.jwtData.id) {
+    if (user.id.toString() !== res.locals.jwtData.id) {
       return res.status(401).send("Permissions didn't match");
     }
 

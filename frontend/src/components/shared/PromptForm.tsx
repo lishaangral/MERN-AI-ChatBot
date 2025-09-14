@@ -23,7 +23,7 @@ const PromptForm: React.FC<Props> = ({ activeChatId, onNewMessage, setIsLoading 
     try {
       if (!chatId) {
         const created = await createChatAPI();
-        chatId = created.chat._id || created.chat.id || undefined;
+        chatId = created.chat.id || undefined;
       }
 
       // optimistic: append user message

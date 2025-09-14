@@ -49,7 +49,7 @@ const Chat: React.FC = () => {
         setActiveChatId(list[0].id);
       } else {
         const created = await createChatAPI();
-        const newId = created.chat._id || created.chat.id;
+        const newId = created.chat.id;
         await reloadChatsAndSelect(newId);
       }
     } catch (err) {
@@ -75,7 +75,7 @@ const Chat: React.FC = () => {
       try {
         const res = await getChatById(activeChatId);
         const c = res.chat;
-        setActiveChat({ id: c._id, title: c.title, messages: c.messages || [] });
+        setActiveChat({ id: c.id, title: c.title, messages: c.messages || [] });
       } catch (err) {
         console.error("getChatById error", err);
       }
@@ -93,7 +93,7 @@ const Chat: React.FC = () => {
   const handleCreate = async () => {
     try {
       const res = await createChatAPI();
-      const newId = res.chat._id || res.chat.id;
+      const newId = res.chat.id || res.chat.id;
       await reloadChatsAndSelect(newId);
     } catch (err) {
       console.error("handleCreate error", err);
@@ -113,7 +113,7 @@ const Chat: React.FC = () => {
       const after = await getUserChats();
       if (!after.chats || after.chats.length === 0) {
         const created = await createChatAPI();
-        const newId = created.chat._id || created.chat.id;
+        const newId = created.chat.id;
         await reloadChatsAndSelect(newId);
       }
     } catch (err) {
@@ -144,7 +144,7 @@ const Chat: React.FC = () => {
       let chatId = activeChatId;
       if (!chatId) {
         const created = await createChatAPI();
-        chatId = created.chat._id || created.chat.id;
+        chatId = created.chat.id;
         await reloadChatsAndSelect(chatId);
       }
 
