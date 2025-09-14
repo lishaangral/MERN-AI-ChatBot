@@ -1,10 +1,10 @@
-# MERN AI ChatBot
+# MERN AI Chat Interface
 
 <p align="center">
   <img src="assets/home-page.png" alt="MERN AI Chatbot Screenshot" width="800"/>
 </p>
 
-A full-stack AI SaaS chatbot platform built with the **MERN stack** and integrated with **Google’s Gemini API**.
+A full-stack AI SaaS chat platform built with the **MERN stack** and integrated with **Google’s Gemini API**.
 The app allows users to securely sign up, log in, and interact with an AI assistant in persistent chat sessions.
 
 ---
@@ -12,7 +12,7 @@ The app allows users to securely sign up, log in, and interact with an AI assist
 
 Try out the live chatbot here:  
 
-Link: **[MERN AI Chatbot | Live on Render](https://mern-ai-chatbot-frontend-0cb0.onrender.com/)**  
+Link: **[MERN AI Chat Interface | Live on Render](https://mern-ai-chatbot-frontend-0cb0.onrender.com/)**  
 
 🔒 **Note:** Your credentials are completely secure. Passwords are hashed using the `bcrypt` library before being stored in the database, ensuring they are never visible to the developer.  
 
