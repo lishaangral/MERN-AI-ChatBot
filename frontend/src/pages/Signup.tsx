@@ -40,8 +40,14 @@ const Signup: React.FC = () => {
       navigate("/login");
     } catch (err: any) {
       console.error("Signup error", err);
-      // If backend returns structured message it might be in err.response.data; but we show generic for now
-      toast.error(err?.message || "Signup failed", { id: "signup" });
+      // If backend returns structured message it might be in err.response.data
+      const backendMessage =
+        err.response?.data?.errors?.[0]?.msg || // e.g. "Password must be at least 6 characters long"
+        err.response?.data?.message || // e.g. "Validation failed"
+        err.message || // fallback
+        "Signup failed. Please try again.";
+
+      toast.error(backendMessage, { id: "signup" });
     } finally {
       setIsSubmitting(false);
     }
