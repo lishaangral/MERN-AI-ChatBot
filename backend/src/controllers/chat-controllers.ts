@@ -43,7 +43,7 @@ export const generateChatCompletion = async (req: Request, res: Response, next: 
     }));
 
     const genAI = configureGemini();
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     const gChat = model.startChat({ history });
     const result = await gChat.sendMessage(message);
