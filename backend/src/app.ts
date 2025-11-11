@@ -14,22 +14,31 @@ const app = express();
 const CORS_ORIGIN = process.env.CORS_ORIGIN;
 const allowedOrigins = [
   "http://localhost:5173",
-  CORS_ORIGIN
+  CORS_ORIGIN,
 ];
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
+      // allow no-origin (mobile apps, curl) and any env-listed origin
+      if (
+        !origin ||
+        allowedOrigins.some(o => !!o && origin.startsWith(o))
+      ) {
         callback(null, true);
       } else {
+        console.warn("Blocked CORS origin:", origin);
         callback(new Error("Not allowed by CORS"));
       }
     },
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
+// always handle preflight requests cleanly
+app.options("*", cors());
 
 // middleware to parse JSON bodies
 // app.use(cors({origin: CORS_ORIGIN, credentials: true}));
