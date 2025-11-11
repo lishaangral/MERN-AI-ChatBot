@@ -138,6 +138,7 @@ const Chat: React.FC = () => {
   };
 
   // Send prompt (used by composer and tiles) with optimistic UI
+
   const sendPrompt = async (promptText: string) => {
     setIsLoading(true);
     try {
@@ -274,18 +275,8 @@ const Chat: React.FC = () => {
 
             {/* Composer always visible when a chat exists */}
             <div className="composer" style={{ padding: 12, borderTop: "1px solid rgba(255,255,255,0.04)" }}>
-              <PromptForm
-                // safe: activeChat may be null, so use optional chaining to pass string | undefined
-                activeChatId={activeChat?.id}
-                onNewMessage={(payload: any) => {
-                  if (payload.replaceId) {
-                    replaceMessageInActiveChat(payload.replaceId, payload.message);
-                  } else {
-                    appendMessageToActiveChat(payload);
-                  }
-                }}
-                setIsLoading={setIsLoading}
-              />
+              <PromptForm onSend={sendPrompt} />
+
               <div className="disclaimer" style={{ marginTop: 8, fontSize: 12, color: "var(--muted)" }}>
                 Gemini can make mistakes — double-check the results.
               </div>

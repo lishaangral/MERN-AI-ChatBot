@@ -1,29 +1,35 @@
-// backend/src/controllers/chat-controllers.ts (replace generateChatCompletion)
+// backend/src/controllers/chat-controllers.ts
 import { NextFunction, Response, Request } from "express";
 import Chat from "../models/Chat";
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 import { configureGemini } from "../config/gemini-config";
 
-export const generateChatCompletion = async (req: Request, res: Response, next: NextFunction) => {
+export const generateChatCompletion = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+
   const { message, chatId } = req.body;
+
   try {
     const userId = res.locals.jwtData?.id;
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
-    // find existing chat by _id and userId (use ObjectId where needed)
+    // find or create chat
     let chat = null;
     if (chatId) {
-      // ensure chatId is a valid ObjectId before querying
       try {
         const _id = new mongoose.Types.ObjectId(chatId);
-        chat = await Chat.findOne({ _id, userId: new mongoose.Types.ObjectId(userId) });
-      } catch (err) {
-        // invalid id format -> leave chat null so we'll create a new one
+        chat = await Chat.findOne({
+          _id,
+          userId: new mongoose.Types.ObjectId(userId),
+        });
+      } catch {
         chat = null;
       }
     }
 
-    // if not found, create a new chat owned by this user
     if (!chat) {
       chat = await Chat.create({
         userId: new mongoose.Types.ObjectId(userId),
@@ -32,50 +38,67 @@ export const generateChatCompletion = async (req: Request, res: Response, next: 
       });
     }
 
-    // push user message
-    chat.messages.push({ role: "user", content: message });
-    await chat.save();
+    // clean and sanitize the message
+    const cleanMessage = String(message).trim().replace(/\s+/g, " ");
 
-    // map history to the Gemini format expected by your SDK
-    const history = (chat.messages || []).map(m => ({
-      role: m.role === "model" ? "model" : m.role,
-      parts: [{ text: m.content }],
-    }));
+    // push user message only if it's new
+    const last = chat.messages[chat.messages.length - 1];
+    if (!last || last.content !== cleanMessage || last.role !== "user") {
+      chat.messages.push({ role: "user", content: cleanMessage });
+      await chat.save();
+    }
 
+    // deduplicate any repeated messages
+    const uniqueMessages: any[] = [];
+    for (const m of chat.messages) {
+      const prev = uniqueMessages[uniqueMessages.length - 1];
+      if (!prev || prev.content !== m.content || prev.role !== m.role) {
+        uniqueMessages.push(m);
+      }
+    }
+
+    // build history excluding the last user message
+    const previous = uniqueMessages
+      .filter((m, i) => i < uniqueMessages.length - 1)
+      .map((m) => ({
+        role: m.role,
+        parts: [{ text: m.content }],
+      }));
+
+    // call Gemini 2.5
     const genAI = configureGemini();
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-    const gChat = model.startChat({ history });
-    const result = await gChat.sendMessage(message);
+    // send only one clean user message with full history
+    const result = await model.generateContent({
+      contents:
+        previous.length > 0
+          ? [
+              ...previous,
+              { role: "user", parts: [{ text: cleanMessage }] },
+            ]
+          : [{ role: "user", parts: [{ text: cleanMessage }] }],
+    });
 
-    // Extract assistant text robustly
+    // extract Gemini reply
     let aiMessage = "";
     try {
-      const r: any = result;
-      if (r?.response && typeof r.response.text === "function") {
-        aiMessage = r.response.text();
-      } else if (Array.isArray(r?.output) && r.output.length > 0) {
-        aiMessage = (r.output[0].content?.parts && r.output[0].content.parts[0]) || "";
-      } else if (r?.candidates && r.candidates[0]) {
-        aiMessage = r.candidates[0].content?.parts?.[0] || "";
-      } else if (r?.outputText) {
-        aiMessage = r.outputText;
-      } else {
-        aiMessage = JSON.stringify(r).slice(0, 1000);
-      }
+      aiMessage = result?.response?.text() || "";
     } catch (ex) {
       console.warn("Could not parse Gemini response:", ex);
-      aiMessage = "";
     }
 
     // save model response
     chat.messages.push({ role: "model", content: aiMessage });
     if (!chat.title || chat.title === "New Chat") {
-      chat.title = message.length > 30 ? message.slice(0, 30) + "..." : message;
+      chat.title =
+        cleanMessage.length > 30
+          ? cleanMessage.slice(0, 30) + "..."
+          : cleanMessage;
     }
     await chat.save();
 
-    // Normalize returned chat so frontend receives `id` (not `_id`)
+    // normalize response
     const normalized = {
       id: chat._id.toString(),
       title: chat.title,
@@ -89,13 +112,22 @@ export const generateChatCompletion = async (req: Request, res: Response, next: 
   }
 };
 
+// remaining CRUD functions (unchanged)
+
 export const createChat = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = res.locals.jwtData?.id;
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
-    const chat = await Chat.create({ userId: new mongoose.Types.ObjectId(userId), title: "New Chat", messages: [] });
-    return res.status(201).json({ chat: { id: chat._id.toString(), title: chat.title, messages: chat.messages } });
+    const chat = await Chat.create({
+      userId: new mongoose.Types.ObjectId(userId),
+      title: "New Chat",
+      messages: [],
+    });
+
+    return res.status(201).json({
+      chat: { id: chat._id.toString(), title: chat.title, messages: chat.messages },
+    });
   } catch (err: any) {
     console.error("createChat error:", err);
     return res.status(500).json({ message: "Unable to create chat" });
@@ -108,8 +140,11 @@ export const getAllChats = async (req: Request, res: Response, next: NextFunctio
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
     const chats = await Chat.find({ userId }).sort({ createdAt: -1 }).lean();
-    // normalize shape expected by frontend
-    const normalized = chats.map((c: any) => ({ id: c._id.toString(), title: c.title, messages: c.messages || [] }));
+    const normalized = chats.map((c: any) => ({
+      id: c._id.toString(),
+      title: c.title,
+      messages: c.messages || [],
+    }));
     return res.status(200).json({ chats: normalized });
   } catch (err: any) {
     console.error("getAllChats error:", err);
@@ -126,7 +161,9 @@ export const getChat = async (req: Request, res: Response, next: NextFunction) =
     const chat = await Chat.findOne({ _id: chatId, userId });
     if (!chat) return res.status(404).json({ message: "Chat not found" });
 
-    return res.status(200).json({ chat: { id: chat._id.toString(), title: chat.title, messages: chat.messages } });
+    return res.status(200).json({
+      chat: { id: chat._id.toString(), title: chat.title, messages: chat.messages },
+    });
   } catch (err: any) {
     console.error("getChat error:", err);
     return res.status(500).json({ message: "Unable to fetch chat" });
@@ -140,7 +177,10 @@ export const deleteChat = async (req: Request, res: Response, next: NextFunction
 
     const chatId = req.params.id;
     const deleted = await Chat.findOneAndDelete({ _id: chatId, userId });
-    if (!deleted) return res.status(404).json({ message: "Chat not found or not owned by user" });
+    if (!deleted)
+      return res
+        .status(404)
+        .json({ message: "Chat not found or not owned by user" });
 
     return res.status(200).json({ message: "OK" });
   } catch (err: any) {

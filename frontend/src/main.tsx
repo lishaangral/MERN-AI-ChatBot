@@ -13,12 +13,10 @@ axios.defaults.withCredentials = import.meta.env.VITE_API_USE_CREDENTIALS === "t
 
 
 createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <AuthProvider>
-      <BrowserRouter>
-      <Toaster position="top-right" />
-        <App /> 
-      </BrowserRouter>
-    </AuthProvider>
-  </StrictMode>
+  <AuthProvider>
+    <BrowserRouter>
+    <Toaster position="top-right" />
+      <App /> 
+    </BrowserRouter>
+  </AuthProvider>
 )
