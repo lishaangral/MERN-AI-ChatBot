@@ -5,7 +5,7 @@ export const configureGemini = () => {
     throw new Error("Missing GEMINI API KEY in environment variables");
   }
 
-  const genAI = new GoogleGenerativeAI(process.env.GEMINI_SECRET);
+  const genAI = new GoogleGenerativeAI(process.env.GEMINI_SECRET!);
 
   return genAI;
 };
