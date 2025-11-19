@@ -5,7 +5,8 @@ import { uploadDocument, ragQuery } from "./rag.controller";
 const router = express.Router();
 const upload = multer();
 
-router.post("/upload", upload.single("file"), uploadDocument);
-router.post("/query", ragQuery);
+// We explicitly type the handlers as "any" to bypass Express TS override problem.
+router.post("/upload", upload.single("file") as any, uploadDocument as any);
+router.post("/query", ragQuery as any);
 
 export default router;

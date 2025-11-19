@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getRagCollection } from "./rag.db";
-import { v4 as uuid } from "uuid";
+import { ObjectId } from "mongodb";
+
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_SECRET!);
 
@@ -32,7 +33,7 @@ export async function storeChunks({
       const embedding = await embedText(chunk);
 
       return {
-        _id: `${docId}_chunk_${idx}`,
+        _id: new ObjectId(),
         projectId,
         docId,
         chunk,

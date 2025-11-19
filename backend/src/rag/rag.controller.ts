@@ -6,11 +6,11 @@ import {
   searchRelevantChunks,
   generateAnswerFromChunks
 } from "./rag.service";
-
+import { FileRequest } from "./rag.types";
 import { v4 as uuid } from "uuid";
 
 // UPLOAD DOCUMENT
-export async function uploadDocument(req: Request, res: Response) {
+export async function uploadDocument(req: FileRequest, res: Response) {
   try {
     if (!req.file) {
       return res.status(400).json({ error: "No file uploaded" });
@@ -40,7 +40,7 @@ export async function uploadDocument(req: Request, res: Response) {
 }
 
 // RAG QUERY
-export async function ragQuery(req: Request, res: Response) {
+export async function ragQuery(req: FileRequest, res: Response) {
   try {
     const { projectId, query } = req.body;
 
