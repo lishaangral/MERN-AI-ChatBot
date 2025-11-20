@@ -64,3 +64,46 @@ export const logoutUser = async () => {
   if (res.status !== 200) throw new Error("Unable to logout");
   return res.data;
 };
+
+// Create a new RAG project
+export const createRagProject = async (body: { name: string }) => {
+  const res = await axios.post("/rag/project", body);
+  if (![200, 201].includes(res.status)) throw new Error("Unable to create RAG project");
+  return res.data;
+};
+
+// Get all RAG projects
+export const getAllRagProjects = async () => {
+  const res = await axios.get("/rag/project/all");
+  if (res.status !== 200) throw new Error("Unable to fetch RAG projects");
+  return res.data;
+};
+
+// Delete a RAG project
+export const deleteRagProject = async (id: string) => {
+  const res = await axios.delete(`/rag/project/${id}`);
+  if (res.status !== 200) throw new Error("Unable to delete RAG project");
+  return res.data;
+};
+
+
+// RAG DOCUMENT UPLOAD
+export const uploadRagDocument = async (projectId: string, file: File) => {
+  const form = new FormData();
+  form.append("file", file);
+  form.append("projectId", projectId);
+
+  const res = await axios.post("/rag/upload", form, {
+    headers: { "Content-Type": "multipart/form-data" }
+  });
+
+  if (res.status !== 200) throw new Error("Unable to upload RAG document");
+  return res.data;
+};
+
+// RAG QUERY
+export const ragQuery = async (projectId: string, query: string) => {
+  const res = await axios.post("/rag/query", { projectId, query });
+  if (res.status !== 200) throw new Error("Unable to run RAG query");
+  return res.data;
+};
