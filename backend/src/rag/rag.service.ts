@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getRagCollection } from "./rag.db";
 import { ObjectId } from "mongodb";
-
+import { getRagDocumentsCollection } from "./rag.documents.db";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_SECRET!);
 
@@ -19,7 +19,7 @@ export async function storeChunks({
   projectId,
   docId,
   chunks,
-  source
+  source,
 }: {
   projectId: string;
   docId: string;
@@ -40,13 +40,24 @@ export async function storeChunks({
         embedding,
         metadata: {
           index: idx,
-          source
-        }
+          source,
+        },
       };
     })
   );
 
   await col.insertMany(docs);
+
+  const docCol = getRagDocumentsCollection();
+
+  await docCol.insertOne({
+    _id: new ObjectId(),
+    projectId,
+    docId,
+    filename: source,
+    chunkCount: chunks.length,
+    uploadedAt: new Date(),
+  });
 }
 
 // VECTOR SEARCH
@@ -64,9 +75,9 @@ export async function searchRelevantChunks(projectId: string, query: string) {
           queryVector,
           numCandidates: 100,
           limit: 5,
-          filter: { projectId }
-        }
-      }
+          filter: { projectId },
+        },
+      },
     ])
     .toArray();
 

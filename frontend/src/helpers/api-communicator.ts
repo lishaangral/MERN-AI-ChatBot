@@ -107,3 +107,17 @@ export const ragQuery = async (projectId: string, query: string) => {
   if (res.status !== 200) throw new Error("Unable to run RAG query");
   return res.data;
 };
+
+// Get documents in a project
+export const getRagDocuments = async (projectId: string) => {
+  const res = await axios.get(`/rag/project/${projectId}/documents`);
+  if (res.status !== 200) throw new Error("Unable to fetch RAG documents");
+  return res.data;
+};
+
+// Delete a document
+export const deleteRagDocument = async (docId: string) => {
+  const res = await axios.delete(`/rag/document/${docId}`);
+  if (res.status !== 200) throw new Error("Unable to delete document");
+  return res.data;
+};
