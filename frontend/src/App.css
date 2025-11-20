@@ -258,3 +258,9 @@ body, html, #root {
 
 /* util */
 .hidden { display: none !important; }
+
+.rag-sidebar { font-family: Inter, system-ui, sans-serif; }
+.rag-sidebar .project { background: transparent; transition: background .12s; }
+.rag-sidebar .project.active { background: rgba(255,255,255,0.02); }
+.rag-sidebar .chat-item { background: rgba(255,255,255,0.02); color: rgba(255,255,255,0.85); padding: 8px; border-radius: 8px; }
+.rag-sidebar .chat-item.active { background: rgba(255,255,255,0.06); color: #fff; font-weight: 700; }

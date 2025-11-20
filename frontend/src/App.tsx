@@ -1,6 +1,7 @@
 import "./App.css";
+import { useEffect } from "react";
 import Header from "./components/Header";
-import { Routes, Route, useParams } from "react-router-dom";
+import { Routes, Route, useParams, useNavigate} from "react-router-dom";
 import Home from "./pages/Home";
 import Chat from "./pages/Chat";
 import Login from "./pages/Login";
@@ -13,15 +14,26 @@ import RagChat from "./rag/pages/RagChat";
 import RagProjectDashboard from "./rag/pages/RagProjectDashboard";
 import RagLayout from "./rag/components/RagLayout";
 
-const RagUploadWrapper = () => {
-  const { projectId } = useParams();
-  return <RagUpload projectId={projectId!} />;
+const CreateProjectRedirect = () => {
+  const navigate = useNavigate();
+  const id = crypto.randomUUID();
+  navigate(`/rag/project/${id}`);
+  return null;
 };
 
-const RagChatWrapper = () => {
-  const { projectId } = useParams();
-  return <RagChat projectId={projectId!} />;
+const OpenMostRecentProject = () => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // fetch recent project id (from API or state)
+    const recentId = localStorage.getItem("recent_project");
+    if (recentId) navigate(`/rag/project/${recentId}`);
+    else navigate("/rag"); // fallback
+  }, []);
+
+  return null;
 };
+
 
 function App() {
   // console.log(useAuth()?.isLoggedIn)
@@ -38,41 +50,18 @@ function App() {
         )}
         <Route path="*" element={<NotFound />} />
 
-        <Route
-          path="/rag"
-          element={
-            <RagLayout>
-              <RagHome />
-            </RagLayout>
-          }
-        />
-
-        <Route
-          path="/rag/project/:projectId"
-          element={
-            <RagLayout>
-              <RagProjectDashboard />
-            </RagLayout>
-          }
-        />
-
-        <Route
-          path="/rag/project/:projectId/upload"
-          element={
-            <RagLayout>
-              <RagUploadWrapper />
-            </RagLayout>
-          }
-        />
-
-        <Route
-          path="/rag/project/:projectId/chat"
-          element={
-            <RagLayout>
-              <RagChatWrapper />
-            </RagLayout>
-          }
-        />
+        <Route path="/rag" element={<RagLayout />}>
+          <Route index element={<RagHome />} />
+          <Route path="project/:projectId" element={<RagProjectDashboard />} />
+          <Route path="project/:projectId/upload" element={<RagUpload />} />
+          <Route path="project/:projectId/chat" element={<RagChat />} />
+          <Route
+            path="project/:projectId/chat/:chatId?"
+            element={<RagChat />}
+          />
+          <Route path="/rag/new" element={<CreateProjectRedirect />} />
+          <Route path="/rag/recent" element={<OpenMostRecentProject />} />
+        </Route>
       </Routes>
     </>
   );

@@ -106,6 +106,19 @@ QUESTION:
 ${query}
 `;
 
-  const response = await model.generateContent(prompt);
+  const response = await retryGenerate(model, prompt);
   return response.response.text();
+}
+
+export async function retryGenerate(model: any, prompt: string, retries = 3) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const res = await model.generateContent(prompt);
+      return res;
+    } catch (err: any) {
+      console.error(`Gemini attempt ${attempt} failed`, err.message);
+      if (attempt === retries) throw err;
+      await new Promise(r => setTimeout(r, 1500)); // wait 1.5s
+    }
+  }
 }

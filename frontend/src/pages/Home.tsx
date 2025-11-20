@@ -33,6 +33,7 @@ const Home: React.FC = () => {
       >
         MERN AI ChatBot
       </h1>
+
       <p
         style={{
           maxWidth: "650px",
@@ -43,27 +44,42 @@ const Home: React.FC = () => {
       >
         A modern conversational AI assistant powered by{" "}
         <span style={{ fontWeight: 600, color: "#00ffcc" }}>Gemini API</span>,
-        built on the MERN stack with authentication, persistent chat history, and
-        a beautiful responsive UI.
+        featuring real-time chat, persistent history, document-backed RAG
+        intelligence, and a clean responsive interface.
       </p>
 
       {/* CTA buttons */}
       <div style={{ display: "flex", gap: "1rem", marginBottom: "3rem" }}>
         {auth?.isLoggedIn ? (
-          <Link
-            to="/chat"
-            style={{
-              background: "#00ffcc",
-              color: "#000",
-              padding: "0.75rem 1.5rem",
-              borderRadius: 8,
-              fontWeight: 600,
-              textDecoration: "none",
-              transition: "background 0.2s",
-            }}
-          >
-            Go to Chats
-          </Link>
+          <>
+            <Link
+              to="/chat"
+              style={{
+                background: "#00ffcc",
+                color: "#000",
+                padding: "0.75rem 1.5rem",
+                borderRadius: 8,
+                fontWeight: 600,
+                textDecoration: "none",
+              }}
+            >
+              Go to Chats
+            </Link>
+
+            <Link
+              to="/rag"
+              style={{
+                background: "#2563eb",
+                color: "#fff",
+                padding: "0.75rem 1.5rem",
+                borderRadius: 8,
+                fontWeight: 600,
+                textDecoration: "none",
+              }}
+            >
+              RAG Workspace
+            </Link>
+          </>
         ) : (
           <>
             <Link
@@ -75,11 +91,11 @@ const Home: React.FC = () => {
                 borderRadius: 8,
                 fontWeight: 600,
                 textDecoration: "none",
-                transition: "background 0.2s",
               }}
             >
               Login
             </Link>
+
             <Link
               to="/signup"
               style={{
@@ -108,87 +124,71 @@ const Home: React.FC = () => {
           marginTop: "3rem",
         }}
       >
-        <div
-          style={{
-            padding: "1.5rem",
-            borderRadius: 12,
-            background: "rgba(255,255,255,0.05)",
-            textAlign: "left",
-          }}
-        >
-          <h3 style={{ marginBottom: "0.5rem", color: "#00ffcc" }}>⚡ Fast Responses</h3>
-          <p style={{ margin: 0, color: "rgba(255,255,255,0.8)" }}>
-            Powered by Gemini API for quick and intelligent conversations.
-          </p>
-        </div>
-        <div
-          style={{
-            padding: "1.5rem",
-            borderRadius: 12,
-            background: "rgba(255,255,255,0.05)",
-            textAlign: "left",
-          }}
-        >
-          <h3 style={{ marginBottom: "0.5rem", color: "#00ffcc" }}>🔒 Secure</h3>
-          <p style={{ margin: 0, color: "rgba(255,255,255,0.8)" }}>
-            Authentication and chat history stored securely with MongoDB.
-          </p>
-        </div>
-        <div
-          style={{
-            padding: "1.5rem",
-            borderRadius: 12,
-            background: "rgba(255,255,255,0.05)",
-            textAlign: "left",
-          }}
-        >
-          <h3 style={{ marginBottom: "0.5rem", color: "#00ffcc" }}>💬 Persistent Chats</h3>
-          <p style={{ margin: 0, color: "rgba(255,255,255,0.8)" }}>
-            Access your previous conversations anytime with an intuitive sidebar.
-          </p>
-        </div>
-        <div
-          style={{
-            padding: "1.5rem",
-            borderRadius: 12,
-            background: "rgba(255,255,255,0.05)",
-            textAlign: "left",
-          }}
-        >
-          <h3 style={{ marginBottom: "0.5rem", color: "#00ffcc" }}>🎨 Clean UI</h3>
-          <p style={{ margin: 0, color: "rgba(255,255,255,0.8)" }}>
-            Minimal, responsive, and user-friendly design for a smooth experience.
-          </p>
-        </div>
-        <div
-          style={{
-            padding: "1.5rem",
-            borderRadius: 12,
-            background: "rgba(255,255,255,0.05)",
-            textAlign: "left",
-          }}
-        >
-          <h3 style={{ marginBottom: "0.5rem", color: "#00ffcc" }}>🛠️ Customizable Prompts</h3>
-          <p style={{ margin: 0, color: "rgba(255,255,255,0.8)" }}>
-            Tailor conversations to your needs, from coding help to creative writing.
-          </p>
-        </div>
-        <div
-          style={{
-            padding: "1.5rem",
-            borderRadius: 12,
-            background: "rgba(255,255,255,0.05)",
-            textAlign: "left",
-          }}
-        >
-          <h3 style={{ marginBottom: "0.5rem", color: "#00ffcc" }}>🌐 Cross-Platform</h3>
-          <p style={{ margin: 0, color: "rgba(255,255,255,0.8)" }}>
-            Access your chatbot from any device with full responsive support.
-          </p>
-        </div>
+        <FeatureCard
+          title="⚡ Fast Responses"
+          desc="Powered by Gemini API for quick and intelligent conversations."
+        />
+        <FeatureCard
+          title="🔒 Secure"
+          desc="Authentication and chat history stored securely with MongoDB."
+        />
+        <FeatureCard
+          title="💬 Persistent Chats"
+          desc="Access previous conversations anytime with an intuitive sidebar."
+        />
+        <FeatureCard
+          title="🎨 Clean UI"
+          desc="Minimal, responsive, and user-friendly design for a smooth experience."
+        />
+        <FeatureCard
+          title="🛠️ Custom Prompts"
+          desc="Tailor conversations for coding, research, writing, and more."
+        />
+        <FeatureCard
+          title="🌐 Cross-Platform"
+          desc="Use your chatbot seamlessly from any device."
+        />
+
+        {/* NEW RAG FEATURES */}
+        <FeatureCard
+          title="📚 Intelligent RAG Workspace"
+          desc="Upload scientific papers, plant pathology notes, or reports and ask document-aware research questions."
+          highlight
+        />
+
+        <FeatureCard
+          title="🔍 Retrieval-Augmented Answers"
+          desc="The system finds relevant text in your uploaded files, processes it using embeddings, and generates grounded responses."
+          highlight
+        />
       </div>
     </div>
   );
 };
+
+const FeatureCard = ({
+  title,
+  desc,
+  highlight = false,
+}: {
+  title: string;
+  desc: string;
+  highlight?: boolean;
+}) => (
+  <div
+    style={{
+      padding: "1.5rem",
+      borderRadius: 12,
+      background: highlight
+        ? "rgba(0,255,204,0.08)"
+        : "rgba(255,255,255,0.05)",
+      textAlign: "left",
+      border: highlight ? "1px solid #00ffcc33" : "none",
+    }}
+  >
+    <h3 style={{ marginBottom: "0.5rem", color: "#00ffcc" }}>{title}</h3>
+    <p style={{ margin: 0, color: "rgba(255,255,255,0.8)" }}>{desc}</p>
+  </div>
+);
 
 export default Home;

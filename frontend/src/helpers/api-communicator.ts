@@ -121,3 +121,34 @@ export const deleteRagDocument = async (docId: string) => {
   if (res.status !== 200) throw new Error("Unable to delete document");
   return res.data;
 };
+
+// RAG chats
+export const createRagChatAPI = async (projectId: string, title?: string) => {
+  const res = await axios.post("/rag/chat/create", { projectId, title });
+  if (res.status !== 200) throw new Error("Unable to create RAG chat");
+  return res.data;
+};
+
+export const getProjectRagChats = async (projectId: string) => {
+  const res = await axios.get(`/rag/chat/project/${projectId}`);
+  if (res.status !== 200) throw new Error("Unable to fetch project chats");
+  return res.data;
+};
+
+export const getRagChatById = async (chatId: string) => {
+  const res = await axios.get(`/rag/chat/${chatId}`);
+  if (res.status !== 200) throw new Error("Unable to get chat");
+  return res.data;
+};
+
+export const sendRagChatMessage = async (payload: { chatId?: string; projectId: string; message: string; }) => {
+  const res = await axios.post("/rag/chat/send", payload);
+  if (res.status !== 200) throw new Error("Unable to send chat message");
+  return res.data;
+};
+
+export const deleteRagChat = async (chatId: string) => {
+  const res = await axios.delete(`/rag/chat/${chatId}`);
+  if (res.status !== 200) throw new Error("Unable to delete chat");
+  return res.data;
+};

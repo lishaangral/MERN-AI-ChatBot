@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { extractTextFromPDF } from "./pdf";
+import { extractTextFromBuffer } from "./extract";
 import { chunkText } from "./chunking";
 import {
   storeChunks,
@@ -19,7 +19,7 @@ export async function uploadDocument(req: FileRequest, res: Response) {
     const { projectId } = req.body;
     const docId = uuid();
 
-    const text = await extractTextFromPDF(req.file.buffer);
+    const text = await extractTextFromBuffer(req.file.buffer, req.file.originalname);
     const chunks = chunkText(text);
 
     await storeChunks({

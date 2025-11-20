@@ -1,14 +1,19 @@
 import React, { useState, DragEvent } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { uploadRagDocument } from "../../helpers/api-communicator";
 
-const RagUpload: React.FC<{ projectId: string }> = ({ projectId }) => {
+const RagUpload: React.FC = () => {
+  const nav = useNavigate();
+  const { projectId } = useParams();
   const [files, setFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState("");
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files) return;
-    setFiles([...files, ...Array.from(e.target.files)]);
+    const selected = e.target.files;
+    if (!selected) return;
+
+    setFiles((prev) => [...prev, ...Array.from(selected)]);
   };
 
   const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
@@ -17,8 +22,10 @@ const RagUpload: React.FC<{ projectId: string }> = ({ projectId }) => {
 
   const handleDrop = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    if (!e.dataTransfer.files) return;
-    setFiles([...files, ...Array.from(e.dataTransfer.files)]);
+    const dropped = e.dataTransfer.files;
+    if (!dropped) return;
+
+    setFiles((prev) => [...prev, ...Array.from(dropped)]);
   };
 
   const uploadAll = async () => {
@@ -31,11 +38,12 @@ const RagUpload: React.FC<{ projectId: string }> = ({ projectId }) => {
     setMessage("");
 
     try {
-      for (const file of files) {
-        await uploadRagDocument(projectId, file);
+      for (const f of files) {
+        await uploadRagDocument(projectId!, f);
       }
-      setMessage("All files uploaded successfully!");
       setFiles([]);
+      setMessage("All files uploaded successfully!");
+      nav(`/rag/project/${projectId}/chat`);
     } catch (err) {
       console.error(err);
       setMessage("Error uploading files.");
@@ -46,42 +54,33 @@ const RagUpload: React.FC<{ projectId: string }> = ({ projectId }) => {
 
   return (
     <div style={{ padding: 20, color: "white" }}>
-      <h2 style={{ marginBottom: 16 }}>Upload PDF Documents</h2>
+      <h2 style={{ marginBottom: 16 }}>Upload Documents</h2>
 
-      {/* Drag and Drop Area */}
       <div
         onDragOver={handleDragOver}
         onDrop={handleDrop}
         style={{
-          padding: "40px",
+          padding: 40,
           border: "2px dashed rgba(255,255,255,0.4)",
           borderRadius: 12,
           textAlign: "center",
-          cursor: "pointer",
           marginBottom: 20,
           background: "rgba(255,255,255,0.05)",
         }}
       >
-        Drag & Drop PDFs Here  
+        Drag & Drop files here  
         <br />
-        <span style={{ opacity: 0.7, fontSize: 13 }}>
-          or click below to select
-        </span>
+        <span style={{ opacity: 0.7, fontSize: 13 }}>or click below</span>
       </div>
 
-      {/* File Input */}
       <input
         type="file"
-        accept="application/pdf"
+        accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg"
         multiple
         onChange={handleFileSelect}
-        style={{
-          marginTop: 10,
-          marginBottom: 20,
-        }}
+        style={{ marginBottom: 20 }}
       />
 
-      {/* Selected Files List */}
       {files.length > 0 && (
         <div
           style={{
@@ -91,7 +90,7 @@ const RagUpload: React.FC<{ projectId: string }> = ({ projectId }) => {
             borderRadius: 10,
           }}
         >
-          <h4>Files ready to upload:</h4>
+          <h4>Ready to upload:</h4>
           <ul>
             {files.map((file, idx) => (
               <li key={idx}>{file.name}</li>
@@ -108,12 +107,12 @@ const RagUpload: React.FC<{ projectId: string }> = ({ projectId }) => {
           borderRadius: 8,
           background: uploading
             ? "rgba(255,255,255,0.2)"
-            : "rgba(255,255,255,0.08)",
-          border: "1px solid rgba(255,255,255,0.15)",
+            : "rgba(255,255,255,0.15)",
+          border: "1px solid rgba(255,255,255,0.2)",
           cursor: uploading ? "not-allowed" : "pointer",
         }}
       >
-        {uploading ? "Uploading..." : "Upload All Files"}
+        {uploading ? "Uploading..." : "Upload All"}
       </button>
 
       {message && (
