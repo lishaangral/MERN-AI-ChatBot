@@ -45,8 +45,18 @@ const Header: React.FC = () => {
               {auth?.isLoggedIn ? (
                 <>
                   <Link to="/chat">
-                    <button className="nav-button nav-button-primary">Go To Chat</button>
+                    <button className="nav-button nav-button-primary">
+                      Go To Chat
+                    </button>
                   </Link>
+
+                  {/* NEW: RAG WORKSPACE BUTTON */}
+                  <Link to="/rag">
+                    <button className="nav-button nav-button-secondary">
+                      RAG Workspace
+                    </button>
+                  </Link>
+
                   <button
                     type="button"
                     className="nav-button nav-button-ghost"
@@ -58,10 +68,14 @@ const Header: React.FC = () => {
               ) : (
                 <>
                   <Link to="/login">
-                    <button className="nav-button nav-button-primary">Login</button>
+                    <button className="nav-button nav-button-primary">
+                      Login
+                    </button>
                   </Link>
                   <Link to="/signup">
-                    <button className="nav-button nav-button-secondary">Signup</button>
+                    <button className="nav-button nav-button-secondary">
+                      Signup
+                    </button>
                   </Link>
                 </>
               )}
