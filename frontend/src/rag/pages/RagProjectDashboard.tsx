@@ -46,7 +46,12 @@ const RagProjectDashboard: React.FC = () => {
   };
 
   const handleDelete = async (docId: string) => {
-    if (!confirm("Delete this document? This will remove its chunks from the index.")) return;
+    if (
+      !confirm(
+        "Delete this document? This will remove its chunks from the index."
+      )
+    )
+      return;
     await deleteRagDocument(docId);
     // refresh
     const refreshed = await getRagDocuments(projectId!);
@@ -54,13 +59,24 @@ const RagProjectDashboard: React.FC = () => {
   };
 
   return (
-    <div style={{ padding: 32, color: "white", maxWidth: 1100, margin: "0 auto" }}>
+    <div
+      style={{ padding: 32, color: "white", maxWidth: 1100, margin: "0 auto" }}
+    >
       {/* header + actions - centered block */}
       <div style={{ textAlign: "left", marginBottom: 28 }}>
-        <h1 style={{ fontSize: 36, margin: 0 }}>{projectName ? `Project: ${projectName}` : "Project"}</h1>
-        <p style={{ color: "rgba(255,255,255,0.75)", marginTop: 10, maxWidth: 820 }}>
-          Manage documents and run scientific RAG queries for this project. Upload PDFs, DOCX or TXT files and ask
-          context-aware questions — results will be backed by the documents you provide.
+        <h1 style={{ fontSize: 36, margin: 0 }}>
+          {projectName ? `Project: ${projectName}` : "Project"}
+        </h1>
+        <p
+          style={{
+            color: "rgba(255,255,255,0.75)",
+            marginTop: 10,
+            maxWidth: 820,
+          }}
+        >
+          Manage documents and run scientific RAG queries for this project.
+          Upload PDFs, DOCX or TXT files and ask context-aware questions —
+          results will be backed by the documents you provide.
         </p>
 
         <div style={{ marginTop: 20, display: "flex", gap: 12 }}>
@@ -82,13 +98,14 @@ const RagProjectDashboard: React.FC = () => {
 
           <button
             onClick={onOpenChatClick}
+            disabled={documents.length === 0}
             style={{
               padding: "12px 18px",
               borderRadius: 10,
               background: "transparent",
-              color: "#fff",
+              color: documents.length === 0 ? "rgba(255,255,255,0.3)" : "#fff",
               border: "1px solid rgba(255,255,255,0.08)",
-              cursor: "pointer",
+              cursor: documents.length === 0 ? "not-allowed" : "pointer",
               fontWeight: 600,
             }}
           >
@@ -98,10 +115,20 @@ const RagProjectDashboard: React.FC = () => {
       </div>
 
       {/* little helper */}
-      <div style={{ margin: "18px 0 28px", display: "flex", alignItems: "center", gap: 12 }}>
-        <strong style={{ color: "rgba(255,255,255,0.95)" }}>How to view uploaded documents</strong>
+      <div
+        style={{
+          margin: "18px 0 28px",
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+        }}
+      >
+        <strong style={{ color: "rgba(255,255,255,0.95)" }}>
+          How to view uploaded documents
+        </strong>
         <span style={{ color: "rgba(255,255,255,0.6)" }}>
-          Click the project on the left sidebar to reveal uploaded documents and chat tabs. Use Upload to add more files.
+          Click the project on the left sidebar to reveal uploaded documents and
+          chat tabs. Use Upload to add more files.
         </span>
       </div>
 
@@ -110,10 +137,20 @@ const RagProjectDashboard: React.FC = () => {
         <h3 style={{ marginBottom: 12 }}>Documents</h3>
 
         {loadingDocs ? (
-          <div style={{ color: "rgba(255,255,255,0.6)" }}>Loading documents…</div>
+          <div style={{ color: "rgba(255,255,255,0.6)" }}>
+            Loading documents…
+          </div>
         ) : documents.length === 0 ? (
-          <div style={{ padding: 28, borderRadius: 10, background: "rgba(255,255,255,0.02)" }}>
-            <div style={{ fontSize: 16, fontWeight: 600 }}>No documents uploaded yet</div>
+          <div
+            style={{
+              padding: 28,
+              borderRadius: 10,
+              background: "rgba(255,255,255,0.02)",
+            }}
+          >
+            <div style={{ fontSize: 16, fontWeight: 600 }}>
+              No documents uploaded yet
+            </div>
             <div style={{ color: "rgba(255,255,255,0.6)", marginTop: 6 }}>
               Upload files to make your project queryable.
             </div>
@@ -134,15 +171,32 @@ const RagProjectDashboard: React.FC = () => {
                 }}
               >
                 <div>
-                  <div style={{ fontSize: 16, fontWeight: 700 }}>{d.filename || d.source || "Document"}</div>
-                  <div style={{ color: "rgba(255,255,255,0.6)", marginTop: 6, fontSize: 13 }}>
-                    {d.chunkCount ?? d.chunks ?? 0} chunks • Uploaded {new Date(d.uploadedAt || d.createdAt || Date.now()).toLocaleString()}
+                  <div style={{ fontSize: 16, fontWeight: 700 }}>
+                    {d.filename || d.source || "Document"}
+                  </div>
+                  <div
+                    style={{
+                      color: "rgba(255,255,255,0.6)",
+                      marginTop: 6,
+                      fontSize: 13,
+                    }}
+                  >
+                    {d.chunkCount ?? d.chunks ?? 0} chunks • Uploaded{" "}
+                    {new Date(
+                      d.uploadedAt || d.createdAt || Date.now()
+                    ).toLocaleString()}
                   </div>
                 </div>
 
                 <div style={{ display: "flex", gap: 8 }}>
                   <button
-                    onClick={() => navigate(`/rag/project/${projectId}/document/${d.docId || d._id}/view`)}
+                    onClick={() =>
+                      navigate(
+                        `/rag/project/${projectId}/document/${
+                          d.docId || d._id
+                        }/view`
+                      )
+                    }
                     style={{
                       padding: "8px 12px",
                       borderRadius: 8,

@@ -1,3 +1,4 @@
+import { getRagDocuments } from "../../helpers/api-communicator";
 import React, { useEffect, useState } from "react";
 import {
   MessageSquare,
@@ -94,6 +95,18 @@ const RagSidebar: React.FC<Props> = ({
   };
 
   const createNewChat = async (projectId: string) => {
+    // Check if documents exist first
+    try {
+      const res = await getRagDocuments(projectId);
+      if (!res.documents || res.documents.length === 0) {
+        alert("Upload at least one document before creating a chat.");
+        return;
+      }
+    } catch {
+      alert("Unable to check documents. Try again.");
+      return;
+    }
+
     const res = await createRagChatAPI(projectId, "New chat");
     await fetchChatsFor(projectId);
     setActiveProjectId(projectId);
@@ -101,7 +114,19 @@ const RagSidebar: React.FC<Props> = ({
     nav(`/rag/project/${projectId}/chat/${res.chat._id}`);
   };
 
-  const openChat = (projectId: string, chatId: string) => {
+  const openChat = async (projectId: string, chatId: string) => {
+    // Check if documents exist before opening chat
+    try {
+      const res = await getRagDocuments(projectId);
+      if (!res.documents || res.documents.length === 0) {
+        alert("Upload a document before opening chats for this project.");
+        return;
+      }
+    } catch {
+      alert("Unable to load documents. Try again.");
+      return;
+    }
+
     setActiveProjectId(projectId);
     setActiveChatId(chatId);
     nav(`/rag/project/${projectId}/chat/${chatId}`);
@@ -112,7 +137,10 @@ const RagSidebar: React.FC<Props> = ({
     try {
       await deleteRagChat(chatId);
     } catch (err) {
-      console.warn("deleteRagChat failed (make sure backend implements endpoint):", err);
+      console.warn(
+        "deleteRagChat failed (make sure backend implements endpoint):",
+        err
+      );
     }
     await fetchChatsFor(projectId);
     if (activeChatId === chatId) {
@@ -161,7 +189,13 @@ const RagSidebar: React.FC<Props> = ({
         <div style={{ padding: 18 }}>
           {/* top area: only show full controls when not collapsed */}
           {!collapsed ? (
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
               <button
                 onClick={handleCreateProject}
                 style={{
@@ -201,10 +235,18 @@ const RagSidebar: React.FC<Props> = ({
                   style={{
                     borderRadius: 10,
                     padding: collapsed ? 8 : 10,
-                    background: isActiveProject ? "rgba(255,255,255,0.02)" : "transparent",
+                    background: isActiveProject
+                      ? "rgba(255,255,255,0.02)"
+                      : "transparent",
                   }}
                 >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
                     <div
                       onClick={() => toggleProject(p._id)}
                       style={{
@@ -215,13 +257,23 @@ const RagSidebar: React.FC<Props> = ({
                       }}
                     >
                       {/* when collapsed: show only a simple folder icon (no extra file icons) */}
-                      <div style={{ width: 22, display: "grid", placeItems: "center" }}>
+                      <div
+                        style={{
+                          width: 22,
+                          display: "grid",
+                          placeItems: "center",
+                        }}
+                      >
                         <Folder size={18} />
                       </div>
 
                       {!collapsed && (
                         <>
-                          {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                          {isOpen ? (
+                            <ChevronDown size={14} />
+                          ) : (
+                            <ChevronRight size={14} />
+                          )}
                           <div style={{ fontWeight: 700 }}>{p.name}</div>
                         </>
                       )}
@@ -231,6 +283,7 @@ const RagSidebar: React.FC<Props> = ({
                       <div style={{ display: "flex", gap: 8 }}>
                         <button
                           onClick={() => createNewChat(p._id)}
+                          title="Upload a document first"
                           style={{
                             padding: "6px 8px",
                             borderRadius: 8,
@@ -241,7 +294,10 @@ const RagSidebar: React.FC<Props> = ({
                           + New
                         </button>
 
-                        <button onClick={() => handleDeleteProject(p._id)} style={{ padding: 6, borderRadius: 6 }}>
+                        <button
+                          onClick={() => handleDeleteProject(p._id)}
+                          style={{ padding: 6, borderRadius: 6 }}
+                        >
                           <Trash2 size={14} />
                         </button>
                       </div>
@@ -252,7 +308,14 @@ const RagSidebar: React.FC<Props> = ({
                   {!collapsed && isOpen && (
                     <div style={{ marginTop: 10, marginLeft: 28 }}>
                       {chats.length === 0 ? (
-                        <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 13 }}>No chats yet</div>
+                        <div
+                          style={{
+                            color: "rgba(255,255,255,0.6)",
+                            fontSize: 13,
+                          }}
+                        >
+                          No chats yet
+                        </div>
                       ) : (
                         chats.map((c) => {
                           const isActive = activeChatId === c._id;
@@ -266,17 +329,33 @@ const RagSidebar: React.FC<Props> = ({
                                 padding: "8px 10px",
                                 marginBottom: 8,
                                 borderRadius: 8,
-                                background: isActive ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.02)",
+                                background: isActive
+                                  ? "rgba(255,255,255,0.06)"
+                                  : "rgba(255,255,255,0.02)",
                                 cursor: "pointer",
                               }}
                             >
-                              <div onClick={() => openChat(p._id, c._id)} style={{ display: "flex", gap: 10 }}>
+                              <div
+                                onClick={() => openChat(p._id, c._id)}
+                                style={{ display: "flex", gap: 10 }}
+                              >
                                 <MessageSquare size={14} />
-                                <div style={{ fontSize: 13, fontWeight: isActive ? 700 : 600 }}>{c.title || "Untitled chat"}</div>
+                                <div
+                                  style={{
+                                    fontSize: 13,
+                                    fontWeight: isActive ? 700 : 600,
+                                  }}
+                                >
+                                  {c.title || "Untitled chat"}
+                                </div>
                               </div>
 
                               <div>
-                                <button onClick={() => handleDeleteChat(p._id, c._id)} title="Delete chat" style={{ padding: 6, borderRadius: 6 }}>
+                                <button
+                                  onClick={() => handleDeleteChat(p._id, c._id)}
+                                  title="Delete chat"
+                                  style={{ padding: 6, borderRadius: 6 }}
+                                >
                                   <Trash2 size={14} />
                                 </button>
                               </div>

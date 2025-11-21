@@ -1,45 +1,63 @@
-import mammoth from "mammoth";
+/**
+ * extract.ts (Render-compatible)
+ * Extracts text from PDF, DOCX, TXT buffers safely
+ */
+
 import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.mjs";
+import mammoth from "mammoth";
 
-// Extract text using pdfjs-dist (Render-compatible)
+// Extract PDF using pdfjs-dist with Uint8Array (Render fix)
+export async function extractPdfText(buffer: Buffer): Promise<string> {
+  try {
+    const uint8 = new Uint8Array(buffer); // FIX for Render
 
-async function extractPdfText(buffer: Buffer): Promise<string> {
-  const loadingTask = pdfjsLib.getDocument({ data: buffer });
-  const pdf = await loadingTask.promise;
+    const loadingTask = pdfjsLib.getDocument({ data: uint8 });
+    const pdf = await loadingTask.promise;
 
-  let fullText = "";
+    let fullText = "";
 
-  for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-    const page = await pdf.getPage(pageNum);
-    const content = await page.getTextContent();
+    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+      const page = await pdf.getPage(pageNum);
+      const textContent = await page.getTextContent();
+      fullText += textContent.items.map((item: any) => item.str).join(" ") + "\n";
+    }
 
-    const strings = content.items.map((item: any) => item.str);
-    fullText += strings.join(" ") + "\n";
+    return fullText;
+  } catch (err) {
+    console.error("PDF EXTRACT ERROR:", err);
+    return "";
   }
-
-  return fullText;
 }
 
-
-//  Main extraction function
-export async function extractTextFromBuffer(
-  buffer: Buffer,
-  filename: string
-): Promise<string> {
-  const lower = filename.toLowerCase();
-
-  if (lower.endsWith(".pdf")) {
-    return extractPdfText(buffer);
-  }
-
-  if (lower.endsWith(".docx")) {
+// Extract DOCX using mammoth
+export async function extractDocxText(buffer: Buffer): Promise<string> {
+  try {
     const result = await mammoth.extractRawText({ buffer });
     return result.value || "";
+  } catch (err) {
+    console.error("DOCX EXTRACT ERROR:", err);
+    return "";
   }
+}
+// Extract TXT
+export function extractTxtText(buffer: Buffer): string {
+  try {
+    return buffer.toString("utf-8");
+  } catch {
+    return "";
+  }
+}
 
-  if (lower.endsWith(".txt")) {
-    return buffer.toString("utf8");
-  }
+// Smart choose extractor
+export async function extractTextFromBuffer(
+  buffer: Buffer,
+  mimeType: string
+): Promise<string> {
+  mimeType = mimeType.toLowerCase();
+
+  if (mimeType.includes("pdf")) return extractPdfText(buffer);
+  if (mimeType.includes("word") || mimeType.includes("docx")) return extractDocxText(buffer);
+  if (mimeType.includes("text")) return extractTxtText(buffer);
 
   return "";
 }
