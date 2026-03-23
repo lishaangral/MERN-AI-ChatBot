@@ -13,6 +13,7 @@ import RagUpload from "./rag/pages/RagUpload";
 import RagChat from "./rag/pages/RagChat";
 import RagProjectDashboard from "./rag/pages/RagProjectDashboard";
 import RagLayout from "./rag/components/RagLayout";
+import AnnouncementBanner from "./components/AnnouncementBanner";
 
 const CreateProjectRedirect = () => {
   const navigate = useNavigate();
@@ -40,6 +41,7 @@ function App() {
   const auth = useAuth();
   return (
     <>
+      <AnnouncementBanner />
       <Header></Header>
       <Routes>
         <Route path="/" element={<Home />} />
