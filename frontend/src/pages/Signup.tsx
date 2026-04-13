@@ -1,137 +1,161 @@
-// frontend/src/pages/Signup.tsx
-import React, { useState } from "react";
+// // frontend/src/pages/Signup.tsx
+
 import { Link, useNavigate } from "react-router-dom";
-import CustomizedInput from "../components/shared/CustomizedInput";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import FloatingOrbs from "@/components/FloatingOrbs";
+import { motion } from "framer-motion";
+import { useState } from "react";
+import { UserPlus, Eye, EyeOff, Shield } from "lucide-react";
 import { signupUser } from "../helpers/api-communicator";
 import { toast } from "react-hot-toast";
 
 const Signup: React.FC = () => {
-  const navigate = useNavigate();
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPw, setShowPw] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const name = (formData.get("name") as string) || "";
-    const email = (formData.get("email") as string) || "";
-    const password = (formData.get("password") as string) || "";
-    const confirm = (formData.get("confirmPassword") as string) || "";
 
-    // Basic validation
-    if (!name.trim() || !email.trim() || !password.trim()) {
-      toast.error("Please fill in all required fields.");
-      return;
+    if (!fullName.trim() || !email.trim() || !password.trim()) {
+        toast.error("Please fill in all required fields.");
+        return;
     }
-    if (password !== confirm) {
-      toast.error("Passwords do not match.");
-      return;
+
+    if (password !== confirmPassword) {
+        toast.error("Passwords do not match.");
+        return;
     }
 
     try {
-      setIsSubmitting(true);
-      toast.loading("Creating account...", { id: "signup" });
+        setIsSubmitting(true);
 
-      // call helper which posts to backend /user/signup
-      const data = await signupUser(name.trim(), email.trim(), password);
+        toast.loading("Creating account...", { id: "signup" });
 
-      toast.success("Account created successfully", { id: "signup" });
+        await signupUser(fullName.trim(), email.trim(), password);
 
-      // redirect to login so user can sign in
-      navigate("/login");
+        toast.success("Account created successfully", { id: "signup" });
+
+        navigate("/login");
     } catch (err: any) {
-      console.error("Signup error", err);
-      // If backend returns structured message it might be in err.response.data
-      const backendMessage =
-        err.response?.data?.errors?.[0]?.msg || // e.g. "Password must be at least 6 characters long"
-        err.response?.data?.message || // e.g. "Validation failed"
-        err.message || // fallback
-        "Signup failed. Please try again.";
+        console.error("Signup error", err);
 
-      toast.error(backendMessage, { id: "signup" });
+        const backendMessage =
+        err.response?.data?.errors?.[0]?.msg ||
+        err.response?.data || err.response?.data?.message
+        err.message || "Signup failed. Please try again.";
+
+        toast.error(backendMessage, { id: "signup" });
     } finally {
-      setIsSubmitting(false);
+        setIsSubmitting(false);
     }
-  };
+    };
 
   return (
-    <div
-      style={{
-        minHeight: "calc(100vh - 72px)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "2rem",
-        background: "linear-gradient(180deg, rgba(7,12,18,0.6), rgba(11,17,26,1))",
-      }}
-    >
-      <div
-        style={{
-          width: "100%",
-          maxWidth: 520,
-          background: "linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01))",
-          borderRadius: 12,
-          padding: "2rem",
-          boxShadow: "0 10px 30px rgba(2,6,23,0.6)",
-          border: "1px solid rgba(255,255,255,0.03)",
-        }}
+    <div className="bg-hero flex min-h-screen items-center justify-center px-4 pt-16">
+      <FloatingOrbs />
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="relative z-10 w-full max-w-md"
       >
-        <h2 style={{ margin: 0, marginBottom: 12, color: "#e6eef6" }}>Create account</h2>
-        <p style={{ marginTop: 0, marginBottom: 20, color: "rgba(255,255,255,0.7)" }}>
-          Sign up to save your conversations and interact with the Gemini-powered assistant.
-        </p>
+        <div className="rounded-2xl border border-white/10 bg-surface p-8 shadow-2xl">
+          <div className="mb-6 text-center">
+            <h1 className="font-heading text-2xl font-bold text-hero-foreground">Create Your Account</h1>
+            <p className="mt-1 text-sm text-surface-foreground/70">Join ScholarMind — it's completely free</p>
+          </div>
 
-        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <CustomizedInput type="text" name="name" label="Full name" />
-          <CustomizedInput type="email" name="email" label="Email" />
-          <CustomizedInput type="password" name="password" label="Password" />
-          <CustomizedInput type="password" name="confirmPassword" label="Confirm password" />
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="fullName" className="text-surface-foreground/80">Full Name</Label>
+              <Input
+                id="fullName"
+                name="name"
+                placeholder="Jane Doe"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                required
+                className="border-white/10 bg-white/5 text-hero-foreground placeholder:text-surface-foreground/40"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-surface-foreground/80">Email</Label>
+              <Input
+                id="email"
+                name="email"
+                placeholder="Example: you@university.edu"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="border-white/10 bg-white/5 text-hero-foreground placeholder:text-surface-foreground/40"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-surface-foreground/80">Password</Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  name="password"
+                  type={showPw ? "text" : "password"}
+                  placeholder="Minimum 8 characters"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={8}
+                  className="border-white/10 bg-white/5 pr-10 text-hero-foreground placeholder:text-surface-foreground/40"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPw(!showPw)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-surface-foreground/50 hover:text-surface-foreground"
+                >
+                  {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword" className="text-surface-foreground/80">Confirm Password</Label>
+              <Input
+                id="confirmPassword"
+                name="confirmPassword"
+                type={showPw ? "text" : "password"}
+                placeholder="••••••••"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                className="border-white/10 bg-white/5 text-hero-foreground placeholder:text-surface-foreground/40"
+              />
+            </div>
 
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            style={{
-              marginTop: 6,
-              padding: "12px 14px",
-              borderRadius: 10,
-              background: isSubmitting ? "rgba(37,99,235,0.7)" : "#2563eb",
-              color: "#fff",
-              border: "none",
-              cursor: isSubmitting ? "default" : "pointer",
-              fontWeight: 600,
-              fontSize: 16,
-              transition: "transform 120ms ease",
-            }}
-          >
-            {isSubmitting ? "Creating account..." : "Create account"}
-          </button>
-        </form>
+            <Button type="submit" variant="hero" className="w-full" disabled={isSubmitting}>
+              <UserPlus className="mr-2 h-4 w-4" /> Create Account
+            </Button>
+          </form>
 
-        <div style={{ marginTop: 14, display: "flex", justifyContent: "space-between", alignItems: "center", color: "rgba(255,255,255,0.65)" }}>
-          <small>Already have an account?</small>
-          <Link to="/login" style={{ textDecoration: "none" }}>
-            <button
-              type="button"
-              style={{
-                padding: "8px 12px",
-                borderRadius: 8,
-                background: "transparent",
-                border: "1px solid rgba(255,255,255,0.06)",
-                color: "#fff",
-                cursor: "pointer",
-                fontWeight: 600,
-              }}
-            >
-              Sign in
-            </button>
-          </Link>
+          <div className="mt-6 text-center text-sm text-surface-foreground/60">
+            Already have an account?{" "}
+            <Link to="/login" className="font-medium text-primary hover:underline">
+              Log in here
+            </Link>
+          </div>
+
+          <div className="mt-6 rounded-lg border border-white/5 bg-white/[0.02] p-3 text-xs text-surface-foreground/40 leading-relaxed">
+            <div className="flex items-start gap-2">
+              <Shield className="mt-0.5 h-4 w-4 shrink-0 text-primary/60" />
+              <p>
+                <strong>Your privacy matters.</strong> Passwords are securely hashed and never stored in plain text. Your uploaded documents remain private and are only accessible within your account. We do not share your data with third parties.
+              </p>
+            </div>
+          </div>
         </div>
-
-        <div style={{ marginTop: 12, color: "rgba(255,255,255,0.45)", fontSize: 13 }}>
-          <p style={{ margin: 0 }}>
-            By creating an account you agree to the project usage policy. Gemini responses may be imperfect — always verify critical content.
-          </p>
-        </div>
-      </div>
+      </motion.div>
     </div>
   );
 };

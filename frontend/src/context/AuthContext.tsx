@@ -48,13 +48,22 @@ export const AuthProvider = ({children}: {children: ReactNode}) => {
     };
     const logout = async () => {
         try {
-            await logoutUser(); // this calls backend /user/logout
+            await logoutUser(); // backend logout
+            // backend success → safe logout
             setIsLoggedIn(false);
             setUser(null);
             return true;
+
         } catch (err) {
             console.error("Logout failed", err);
-            // keep previous state if logout fails
+
+            // Case 1: user already invalid (like after delete)
+            if (err?.response?.status === 401) {
+            setIsLoggedIn(false);
+            setUser(null);
+            return true;
+            }
+            // Case 2: real failure (network/server)
             return false;
         }
     };

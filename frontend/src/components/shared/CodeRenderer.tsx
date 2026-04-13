@@ -20,10 +20,10 @@ type CodeRendererProps = {
 
 const CodeRenderer: React.FC<Props> = ({ source }) => {
   // pick a style safely
-  // many versions include 'oneDark' -> try that first, otherwise fallback to a known style key
+  // many versions include 'oneDark', try that first, otherwise fallback to a known style key
   const syntaxStyle: any = (prismStyles as any).oneDark ?? (prismStyles as any).atomDark ?? (prismStyles as any).prism;
 
-  // <-- small change here: loosen the type so TS doesn't try to match a very specific JSX namespace type
+  // loosen the type so TS doesn't try to match a very specific JSX namespace type
   const components: Record<string, any> = {
     code(props: CodeRendererProps) {
       const { inline, className, children } = props;

@@ -1,5 +1,16 @@
 {
   "compilerOptions": {
+    "allowJs": true,
+    "noImplicitAny": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
+    },
+    "skipLibCheck": true,
+    "strictNullChecks": false,
     "target": "ES2020",
     "lib": ["ESNext", "DOM"],
     "module": "ESNext",
@@ -8,7 +19,6 @@
     "jsxImportSource": "react",
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-    "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "resolveJsonModule": true,
@@ -17,6 +27,14 @@
     "declaration": true,
     "types": ["vite/client", "node", "react", "react-dom"]
   },
-  "include": ["src"],
-  "exclude": ["node_modules", "dist"]
+  "files": [],
+  "exclude": ["node_modules", "dist"],
+  "references": [
+    {
+      "path": "./tsconfig.app.json"
+    },
+    {
+      "path": "./tsconfig.node.json"
+    }
+  ]
 }

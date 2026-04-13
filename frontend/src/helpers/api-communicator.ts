@@ -20,6 +20,12 @@ export const checkAuthStatus = async () => {
   return res.data;
 };
 
+export const deleteAccount = async () => {
+  const res = await axios.delete("/user/delete", { withCredentials: true });
+  if (res.status !== 200) throw new Error("Unable to delete account");
+  return res.data;
+};
+
 export const sendChatRequest = async (message: string, chatId?: string) => {
   // POST /chat/new { message, chatId? }
   const res = await axios.post("/chat/new", { message, chatId });
