@@ -47,17 +47,6 @@ export async function storeChunks({
   );
 
   await col.insertMany(docs);
-
-  const docCol = getRagDocumentsCollection();
-
-  await docCol.insertOne({
-    _id: new ObjectId(),
-    projectId,
-    docId,
-    filename: source,
-    chunkCount: chunks.length,
-    uploadedAt: new Date(),
-  });
 }
 
 // VECTOR SEARCH
@@ -121,4 +110,25 @@ export async function retryGenerate(model: any, prompt: string, retries = 3) {
       await new Promise(r => setTimeout(r, 1500)); // wait 1.5s
     }
   }
+}
+
+export async function storeDocumentMetadata({
+  projectId,
+  docId,
+  filename,
+  fileUrl,
+  size,
+  chunkCount,
+}: any) {
+  const col = getRagDocumentsCollection();
+
+  await col.insertOne({
+    projectId,
+    docId,
+    filename,
+    fileUrl,
+    size,
+    chunkCount,
+    uploadedAt: new Date(),
+  });
 }

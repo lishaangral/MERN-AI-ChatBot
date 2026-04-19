@@ -72,7 +72,7 @@ export const logoutUser = async () => {
 };
 
 // Create a new RAG project
-export const createRagProject = async (body: { name: string }) => {
+export const createRagProject = async (body: { name: string; description?: string }) => {
   const res = await axios.post("/rag/project", body);
   if (![200, 201].includes(res.status)) throw new Error("Unable to create RAG project");
   return res.data;
@@ -94,16 +94,38 @@ export const deleteRagProject = async (id: string) => {
 
 
 // RAG DOCUMENT UPLOAD
-export const uploadRagDocument = async (projectId: string, file: File) => {
+// export const uploadRagDocument = async (projectId: string, file: File) => {
+//   const form = new FormData();
+//   form.append("file", file);
+//   form.append("projectId", projectId);
+
+//   const res = await axios.post("/rag/upload", form, {
+//     headers: { "Content-Type": "multipart/form-data" }
+//   });
+
+//   if (res.status !== 200) throw new Error("Unable to upload RAG document");
+//   return res.data;
+// };
+
+export const uploadRagDocument = async (
+  projectId: string,
+  file: File,
+  onProgress?: (progress: number) => void
+) => {
   const form = new FormData();
   form.append("file", file);
   form.append("projectId", projectId);
 
   const res = await axios.post("/rag/upload", form, {
-    headers: { "Content-Type": "multipart/form-data" }
+    headers: { "Content-Type": "multipart/form-data" },
+    onUploadProgress: (e) => {
+      if (onProgress && e.total) {
+        const percent = Math.round((e.loaded * 100) / e.total);
+        onProgress(percent);
+      }
+    },
   });
 
-  if (res.status !== 200) throw new Error("Unable to upload RAG document");
   return res.data;
 };
 

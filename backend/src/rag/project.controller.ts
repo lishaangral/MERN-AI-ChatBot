@@ -4,13 +4,13 @@ import { RagProject } from "./project.model";
 // create new project
 export async function createProject(req: Request, res: Response) {
   try {
-    const { name } = req.body;
+    const { name, description } = req.body;
     if (!name) return res.status(400).json({ error: "name required" });
 
     // ownerId: optional - attach from req.user if you have auth middleware
     const ownerId = (req as any).user?.id || undefined;
 
-    const proj = await RagProject.create({ name, ownerId });
+    const proj = await RagProject.create({ name, description, ownerId });
     return res.json({ projectId: proj._id, project: proj });
   } catch (err) {
     console.error(err);
