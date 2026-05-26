@@ -1,10 +1,15 @@
 # MERN AI Chat Interface
 
 <p align="center">
-  <img src="assets/home-page.png" alt="MERN AI Chatbot Screenshot" width="800"/>
+  <img src="assets/new-home.png" alt="ScholarMind" width="400"/>
+  <img src="assets/home-page.png" alt="MERN AI Chatbot Screenshot" height="228" width="400"/>
 </p>
 
-A full-stack AI SaaS chat platform built with the **MERN stack** and integrated with **Google’s Gemini API**.
+🚧 A new UI Update is under construction. View this document for more information on the re-design:
+
+Link: **[UI and Feature Update Document](https://docs.google.com/document/d/1NnwdRabSEcdkUKYtY8mzzMNdGP1FQQC2MFC8WTZMBqc/edit?usp=sharing)**  
+
+Old Description: A full-stack AI SaaS chat platform built with the **MERN stack** and integrated with **Google’s Gemini API** and **RAG**.
 The app allows users to securely sign up, log in, and interact with an AI assistant in persistent chat sessions.
 
 ---
