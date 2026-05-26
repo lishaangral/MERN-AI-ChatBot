@@ -160,4 +160,42 @@ export const userLogout = async (
   }
 };
 
+export const deleteUser = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = res.locals.jwtData.id;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(401).send("User not found");
+    }
+
+    // Delete user
+    await User.findByIdAndDelete(userId);
+
+    // Clear cookie (logout as well)
+    res.clearCookie(COOKIE_NAME, {
+      httpOnly: true,
+      signed: true,
+      path: "/",
+      secure: true,
+      sameSite: "none",
+    });
+
+    return res.status(200).json({
+      message: "Account deleted successfully",
+    });
+
+  } catch (error: any) {
+    console.log(error);
+    return res.status(500).json({
+      message: "ERROR",
+      cause: error?.message || String(error),
+    });
+  }
+};
+
 // start with npm run dev and not npm start
