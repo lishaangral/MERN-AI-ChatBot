@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { extractTextFromBuffer } from "./extract";
-import { chunkText } from "./chunking";
+import { chunkPages} from "./chunking";
 import {
   storeChunks,
   searchRelevantChunks,
@@ -21,15 +21,22 @@ export async function uploadDocument(req: FileRequest, res: Response) {
     const { projectId } = req.body;
     const docId = uuid();
 
-    const text = await extractTextFromBuffer(
+    // const [text, pageNum] = await extractTextFromBuffer(
+    //   req.file.buffer,
+    //   req.file.mimetype
+    // );
+
+    // if (!text || text.trim().length === 0) {
+    //   return res.status(400).json({ error: "Failed to extract text" });
+    // }
+    // const chunks = chunkText(text);
+
+    const pages = await extractTextFromBuffer(
       req.file.buffer,
       req.file.mimetype
     );
 
-    if (!text || text.trim().length === 0) {
-      return res.status(400).json({ error: "Failed to extract text" });
-    }
-    const chunks = chunkText(text);
+    const chunks = chunkPages(pages);
 
     if (!chunks || chunks.length === 0) {
       return res.status(400).json({ error: "Failed to chunk text" });

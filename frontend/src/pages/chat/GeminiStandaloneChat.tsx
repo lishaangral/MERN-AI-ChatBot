@@ -63,7 +63,7 @@ const GeminiStandaloneChat = () => {
             <HelpCircle className="h-4 w-4 text-surface-foreground/40" />
           </TooltipTrigger>
           <TooltipContent className="max-w-xs">
-            A standalone Gemini conversation — no documents attached. Perfect for brainstorming, analysis, and open-ended exploration.
+            A standalone Gemini conversation - no documents attached. Perfect for brainstorming, analysis, and open-ended exploration.
           </TooltipContent>
         </Tooltip>
       </div>

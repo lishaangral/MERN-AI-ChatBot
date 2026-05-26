@@ -3,12 +3,13 @@ import { FolderPlus, Upload, FileText, X, Check, HelpCircle, Sparkles, RefreshCw
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useWorkspace } from "@/hooks/use-workspace";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "react-hot-toast";
-import { createRagProject, uploadRagDocument } from "@/helpers/api-communicator";
+import { uploadGeminiFile, createRagProject, uploadRagDocument, createGeminiProject } from "@/helpers/api-communicator";
+import { cn } from "@/lib/utils";
 
 const NewProject = () => {
 
@@ -35,6 +36,11 @@ const NewProject = () => {
   // const { addProject, addGeminiProject, addDocument } = useWorkspace();
   const basePath = isGemini ? "/gemini" : "/rag";
 
+  useEffect(() => {
+    const saved = localStorage.getItem("draftProjectId");
+    if (saved) setProjectId(saved);
+  }, []);
+
   const handleFiles = (selected: FileList | null) => {
     if (!selected) return;
 
@@ -50,23 +56,6 @@ const NewProject = () => {
 
     setFilesState((prev) => [...prev, ...mappedFiles]);
   };
-
-  // const updateFile = (index: number, updates: Partial<UploadFile>) => {
-  //   setFilesState(prev => {
-  //     const copy = [...prev];
-  //     copy[index] = { ...copy[index], ...updates };
-  //     return copy;
-  //   });
-  // };
-
-  // const handleDrop = (e: React.DragEvent) => {
-  //   e.preventDefault();
-  //   setDragOver(false);
-  //   const droppedFiles = Array.from(e.dataTransfer.files).filter((f) =>
-  //     ["application/pdf", "text/plain", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"].includes(f.type)
-  //   );
-  //   setFilesState((prev) => [...prev, ...droppedFiles]);
-  // };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -86,27 +75,49 @@ const NewProject = () => {
     setLoading(true);
 
     try {
-      const res = await createRagProject({ name, description });
+      let pid = projectId;
+      console.log("PROJECT ID:", pid);
 
-      const projectId = res?.projectId as string;
+      if (!pid) {
+        // const res = await createRagProject({ name, description });
+        const res = isGemini
+          ? await createGeminiProject({
+              name,
+              description,
+              projectType: "native",
+            })
+          : await createRagProject({
+              name,
+              description,
+            });
 
-      if (!projectId) {
-        throw new Error("Project ID not returned");
+        // pid = res?.projectId as string;
+        pid = isGemini
+          ? res?.project?._id as string
+          : res?.projectId as string;
+
+        if (!pid) {
+          throw new Error("Project ID not returned");
+        }
+
+        setProjectId(pid);
+        localStorage.setItem("draftProjectId", pid);
+        console.log("PROJECT CREATED:", pid);
       }
 
-      setProjectId(projectId);
-      console.log("PROJECT CREATED:", projectId);
-
-      const allSuccess = await uploadAllFiles(projectId);
+      const allSuccess = await uploadAllFiles(pid);
 
       if (!allSuccess) {
         toast.error("Some files failed to upload. Please retry them.");
         setLoading(false);
         return;
       } else {
+        localStorage.removeItem("draftProjectId");
         toast.success("Project created successfully");
-        navigate(`/rag/project/${projectId}`);
-      }      
+        console.log("NAVIGATING TO:", pid);
+        navigate(`${basePath}/project/${pid}`);
+      } 
+           
     } catch (err) {
       console.error("CREATE PROJECT ERROR:", err);
       toast.error("Project creation failed");
@@ -114,17 +125,6 @@ const NewProject = () => {
       setLoading(false);
     }
   };
-
-  // const retryFile = (projectId: string, index: number) => {
-  //   uploadSingle(projectId, index);
-  // };
-
-  // const retryUpload = async (fileId: string, projectId: string) => {
-  //   const file = filesState.find((f) => f.id === fileId);
-  //   if (!file) return;
-
-  //   await uploadSingle(file, projectId);
-  // };
 
   const retryUpload = async (fileId: string) => {
     if (!projectId) {
@@ -138,86 +138,86 @@ const NewProject = () => {
     await uploadSingle(file, projectId);
   };
 
-  // const uploadSingle = async (projectId: string, index: number) => {
-  //   try {
-  //     const fileObj = filesState[index];
-  //     if (!fileObj) return;
-
-  //     updateFile(index, { status: "uploading", progress: 0 });
-
-  //     try {
-  //       await uploadRagDocument(projectId, fileObj.file, (progress: number) => {
-  //         updateFile(index, { progress });
-  //       });
-
-  //       updateFile(index, { status: "success", progress: 100 });
-
-  //     } catch (err) {
-  //       console.error("UPLOAD FAILED:", err);
-
-  //       updateFile(index, {
-  //         status: "failed",
-  //         error: "Upload failed",
-  //       });
-  //     }
-  //   }
-  // };
-
-  const uploadSingle = async (f: UploadFile, pid: string) => {
-    try {
-      setFilesState((prev) =>
-        prev.map((p) =>
-          p.id === f.id ? { ...p, status: "uploading", progress: 0 } : p
-        )
-      );
-
-      await uploadRagDocument(pid, f.file, (progress) => {
+  const uploadSingle = async (
+      f: UploadFile, pid: string
+    ) => {
+  
+      try {
+  
         setFilesState((prev) =>
           prev.map((p) =>
-            p.id === f.id ? { ...p, progress } : p
+            p.id === f.id
+              ? {
+                  ...p,
+                  status: "uploading",
+                  progress: 0,
+                }
+              : p
           )
         );
-      });
-
-      setFilesState((prev) =>
-        prev.map((p) =>
-          p.id === f.id ? { ...p, status: "success", progress: 100 } : p
-        )
-      );
-      return true;
-
-    } catch (err) {
-      console.error("UPLOAD FAILED:", err);
-
-      setFilesState((prev) =>
-        prev.map((p) =>
-          p.id === f.id ? { ...p, status: "failed" } : p
-        )
-      );
-
-      // IMPORTANT: show toast for backend overload / failure
-      toast.error(
-        err?.response?.data?.error ||
-        "Upload failed. Server may be overloaded."
-      );
-
-      return false;
-    }
-  };
-
-  // const uploadAllFiles = async (projectId: string) => {
-  //   let index = 0;
-
-  //   const workers = Array(3).fill(null).map(async () => {
-  //     while (index < filesState.length) {
-  //       const current = index++;
-  //       await uploadSingle(projectId, current);
-  //     }
-  //   });
-
-  //   await Promise.all(workers);
-  // };
-
+  
+        if (isGemini) {
+          await uploadGeminiFile(
+            pid,
+            f.file
+          );
+        } else {
+          await uploadRagDocument(
+            pid,
+            f.file,
+            (progress) => {
+              setFilesState((prev) =>
+                prev.map((p) =>
+                  p.id === f.id
+                    ? {
+                        ...p,
+                        progress,
+                      }
+                    : p
+                )
+              );
+            }
+          );
+        }
+  
+        setFilesState((prev) =>
+          prev.map((p) =>
+            p.id === f.id
+              ? {
+                  ...p,
+                  status: "success",
+                  progress: 100,
+                }
+              : p
+          )
+        );
+  
+        return true;
+  
+      } catch (err) {
+  
+        console.error(err);
+  
+        setFilesState((prev) =>
+          prev.map((p) =>
+            p.id === f.id
+              ? {
+                  ...p,
+                  status: "failed",
+                }
+              : p
+          )
+        );
+  
+        toast.error(
+          err?.response?.data?.error ||
+          `Failed to upload ${f.name}`
+        );
+  
+        return false;
+      }
+    };
+  
   const uploadAllFiles = async (pid: string) => {
     let allSuccess = true;
 
@@ -238,7 +238,7 @@ const NewProject = () => {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mx-auto max-w-2xl"
+        className={cn("mx-auto max-w-2xl", isGemini ? "scrollbar-thin-gemini" : "scrollbar-thin")}
       >
         <div className="flex items-center gap-3">
           <div className={`rounded-2xl p-3 shadow-lg ${isGemini ? "bg-accent/10 shadow-accent/5" : "bg-primary/10 shadow-primary/5"}`}>
@@ -256,7 +256,7 @@ const NewProject = () => {
           </div>
         </div>
 
-        <div className="mt-8 space-y-6">
+        <div className={cn("mt-8 space-y-6", isGemini ? "scrollbar-thin-gemini" : "scrollbar-thin")}>
           {/* Project Name */}
           <div className="space-y-2">
             <div className="flex items-center gap-2">
@@ -340,9 +340,6 @@ const NewProject = () => {
                   multiple
                   accept=".pdf,.docx,.txt"
                   className="hidden"
-                  // onChange={(e) => {
-                  //   if (e.target.files) setFilesState((prev) => [...prev, ...Array.from(e.target.files!)]);
-                  // }}
                   onChange={(e) => handleFiles(e.target.files)}
                 />
                 <span className={`mt-3 inline-block cursor-pointer rounded-xl px-4 py-2 text-sm font-medium transition-all hover:shadow-sm ${isGemini ? "bg-accent/10 text-accent hover:bg-accent/20" : "bg-primary/10 text-primary hover:bg-primary/20"}`}>
@@ -424,229 +421,3 @@ const NewProject = () => {
 };
 
 export default NewProject;
-
-// import { useState } from "react";
-// import { useNavigate } from "react-router-dom";
-// import { useToast } from "@/hooks/use-toast";
-// import { createRagProject, uploadRagDocument } from "@/helpers/api-communicator";
-
-// type UploadFile = {
-//   file: File;
-//   status: "pending" | "uploading" | "success" | "failed";
-//   progress: number;
-//   error?: string;
-//   retries?: number;
-// };
-
-// const MAX_FILES = 10;
-// const MAX_SIZE_MB = 10;
-// const ALLOWED_TYPES = ["application/pdf", "text/plain", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
-// const CONCURRENT_UPLOADS = 3;
-
-// const NewProject = () => {
-//   const navigate = useNavigate();
-//   const { toast } = useToast();
-
-//   const [name, setName] = useState("");
-//   const [description, setDescription] = useState("");
-//   const [files, setFiles] = useState<UploadFile[]>([]);
-//   const [loading, setLoading] = useState(false);
-
-//   // ---------------- FILE ADD ----------------
-//   const handleFiles = (selected: FileList | null) => {
-//     if (!selected) return;
-
-//     const newFiles: UploadFile[] = [];
-
-//     for (const file of Array.from(selected)) {
-//       if (files.length + newFiles.length >= MAX_FILES) {
-//         toast({ title: "Max 10 files allowed" });
-//         break;
-//       }
-
-//       if (!ALLOWED_TYPES.includes(file.type)) {
-//         toast({ title: `${file.name} not supported` });
-//         continue;
-//       }
-
-//       if (file.size > MAX_SIZE_MB * 1024 * 1024) {
-//         toast({ title: `${file.name} exceeds 10MB` });
-//         continue;
-//       }
-
-//       newFiles.push({
-//         file,
-//         status: "pending",
-//         progress: 0,
-//         retries: 0,
-//       });
-//     }
-
-//     setFiles(prev => [...prev, ...newFiles]);
-//   };
-
-//   // ---------------- REMOVE FILE ----------------
-//   const removeFile = (index: number) => {
-//     setFiles(prev => prev.filter((_, i) => i !== index));
-//   };
-
-//   // ---------------- UPDATE FILE ----------------
-//   const updateFile = (index: number, updates: Partial<UploadFile>) => {
-//     setFiles(prev => {
-//       const copy = [...prev];
-//       copy[index] = { ...copy[index], ...updates };
-//       return copy;
-//     });
-//   };
-
-//   // ---------------- UPLOAD SINGLE FILE ----------------
-//   const uploadSingle = async (projectId: string, index: number) => {
-//     const fileObj = files[index];
-//     if (!fileObj) return;
-
-//     updateFile(index, { status: "uploading", progress: 0 });
-
-//     try {
-//       await uploadRagDocument(projectId, fileObj.file, (progress: number) => {
-//         updateFile(index, { progress });
-//       });
-
-//       updateFile(index, { status: "success", progress: 100 });
-
-//     } catch (err) {
-//       console.error("UPLOAD FAILED", err);
-
-//       if ((fileObj.retries || 0) < 1) {
-//         updateFile(index, { retries: (fileObj.retries || 0) + 1 });
-//         return uploadSingle(projectId, index); // auto retry
-//       }
-
-//       updateFile(index, { status: "failed", error: "Upload failed" });
-//     }
-//   };
-
-//   // ---------------- CONCURRENCY QUEUE ----------------
-//   const uploadAllFiles = async (projectId: string) => {
-//     let index = 0;
-
-//     const workers = Array(CONCURRENT_UPLOADS).fill(null).map(async () => {
-//       while (index < files.length) {
-//         const currentIndex = index++;
-//         await uploadSingle(projectId, currentIndex);
-//       }
-//     });
-
-//     await Promise.all(workers);
-//   };
-
-//   // ---------------- CREATE PROJECT ----------------
-//   const handleCreate = async () => {
-//     if (!name.trim()) {
-//       toast({ title: "Project name required" });
-//       return;
-//     }
-
-//     setLoading(true);
-
-//     try {
-//       // STEP 1: CREATE PROJECT
-//       const res = await createRagProject({ name, description });
-//       const projectId = res.projectId;
-
-//       console.log("PROJECT CREATED:", projectId);
-
-//       // STEP 2: UPLOAD FILES
-//       if (files.length > 0) {
-//         await uploadAllFiles(projectId);
-//       }
-
-//       const failed = files.some(f => f.status === "failed");
-
-//       if (failed) {
-//         toast({ title: "Some files failed. Retry them." });
-//         setLoading(false);
-//         return;
-//       }
-
-//       toast({ title: "Project created successfully" });
-
-//       // STEP 3: NAVIGATE
-//       navigate(`/rag/project/${projectId}`);
-
-//     } catch (err) {
-//       console.error(err);
-//       toast({ title: "Project creation failed" });
-//     }
-
-//     setLoading(false);
-//   };
-
-//   // ---------------- RETRY ----------------
-//   const retryFile = (index: number) => {
-//     if (!files[index]) return;
-//     uploadSingle("", index); // projectId will already exist in real case
-//   };
-
-//   // ---------------- UI ----------------
-//   return (
-//     <div className="p-6">
-
-//       <h1>Create New Project</h1>
-
-//       <input
-//         placeholder="Project Name"
-//         value={name}
-//         onChange={(e) => setName(e.target.value)}
-//       />
-
-//       <textarea
-//         placeholder="Description"
-//         value={description}
-//         onChange={(e) => setDescription(e.target.value)}
-//       />
-
-//       <input type="file" multiple onChange={(e) => handleFiles(e.target.files)} />
-
-//       <div>
-//         {files.map((f, i) => (
-//           <div key={i} className="border p-2 mb-2">
-
-//             <div className="flex justify-between items-center">
-
-//               {/* LEFT: status icon */}
-//               <div>
-//                 {f.status === "success" && "✅"}
-//                 {f.status === "failed" && (
-//                   <button onClick={() => retryFile(i)}>🔁</button>
-//                 )}
-//               </div>
-
-//               {/* FILE NAME */}
-//               <div>{f.file.name}</div>
-
-//               {/* REMOVE */}
-//               <button onClick={() => removeFile(i)}>❌</button>
-//             </div>
-
-//             {/* PROGRESS BAR */}
-//             {f.status === "uploading" && (
-//               <div className="h-1 bg-gray-200 mt-1">
-//                 <div
-//                   className="h-1 bg-green-500"
-//                   style={{ width: `${f.progress}%` }}
-//                 />
-//               </div>
-//             )}
-//           </div>
-//         ))}
-//       </div>
-
-//       <button onClick={handleCreate} disabled={loading}>
-//         {loading ? "Creating..." : "Create Project"}
-//       </button>
-
-//     </div>
-//   );
-// };
-
-// export default NewProject;

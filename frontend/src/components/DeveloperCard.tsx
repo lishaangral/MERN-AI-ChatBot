@@ -7,30 +7,31 @@ const socials = [
   {
     icon: Github,
     label: "GitHub",
-    href: "https://github.com/yourusername",
+    href: "https://github.com/lishaangral",
     color: "hover:text-hero-foreground",
   },
   {
     icon: Linkedin,
     label: "LinkedIn",
-    href: "https://linkedin.com/in/yourusername",
+    href: "https://linkedin.com/in/lishaangral",
     color: "hover:text-[hsl(210,80%,55%)]",
   },
   {
     icon: Mail,
-    label: "Email",
-    href: "mailto:your.email@example.com",
+    label: "Personal Mail",
+    href: "mailto:lishaangral@gmail.com",
     color: "hover:text-primary",
   },
   {
-    icon: ExternalLink,
-    label: "Portfolio",
-    href: "https://yourportfolio.dev",
+    icon: Mail,
+    label: "College Mail",
+    href: "mailto:lisha.angral.ug23@nsut.ac.in",
     color: "hover:text-accent",
   },
 ];
 
-const skills = ["React", "TypeScript", "Python", "Node.js", "GenAI", "RAG"];
+// const skills = ["Java", "C++", "Python", "JavaScript", "GenAI", "RAG", "MySQL","MongoDB", "Express", "React", "Node.js", "ASP.NET", "C#", "NumPy", "PyTorch", "AWS", "OS", "CN", "DBMS", "OOPs", "DSA", "GitHub", "Render", "ChromeDevTools", "Postman", "Jupyter Notebook", "VS Code", "Visual Studio", "Google Colab"];
+const skills = ["Java", "C++", "Python", "JavaScript", "GenAI", "RAG", "MySQL","MongoDB", "Express", "React", "Node.js", "ASP.NET", "C#", "NumPy", "PyTorch", "AWS", "OS", "CN", "DBMS", "OOPs", "DSA", "GitHub", "Postman", "VS Code"];
 
 const DeveloperCard = () => {
   return (
@@ -45,7 +46,7 @@ const DeveloperCard = () => {
           Meet the Developer
         </motion.h2>
         <p className="mx-auto mb-12 max-w-xl text-center text-sm text-surface-foreground/60">
-          The mind behind ScholarMind — built with passion for accessible research tools.
+          The mind behind Augmentum - built with passion for accessible research tools.
         </p>
 
         <motion.div
@@ -72,7 +73,7 @@ const DeveloperCard = () => {
                 <Avatar className="relative h-28 w-28 border-2 border-white/10">
                   <AvatarImage src="/placeholder.svg" alt="Developer" />
                   <AvatarFallback className="bg-surface text-2xl font-bold text-primary">
-                    YN
+                    LA
                   </AvatarFallback>
                 </Avatar>
               </div>
@@ -108,10 +109,10 @@ const DeveloperCard = () => {
                 transition={{ delay: 0.3 }}
               >
                 <h3 className="font-heading text-2xl font-bold text-hero-foreground">
-                  Your Name
+                  Lisha Angral
                 </h3>
                 <p className="mt-1 text-sm font-medium text-primary">
-                  Software Engineer Aspirant
+                  SDE Intern @Amazon | DDS Intern @IndiGo | WebD @IOCL | AI/ML Research @NSUT
                 </p>
               </motion.div>
 
@@ -123,10 +124,10 @@ const DeveloperCard = () => {
                 className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-surface-foreground/50 md:justify-start"
               >
                 <span className="flex items-center gap-1">
-                  <GraduationCap className="h-3.5 w-3.5" /> Pre-Final Year, B.Tech CS
+                  <GraduationCap className="h-3.5 w-3.5" /> Pre-Final Year, B.Tech IT NSUT
                 </span>
                 <span className="flex items-center gap-1">
-                  <MapPin className="h-3.5 w-3.5" /> Your City, India
+                  <MapPin className="h-3.5 w-3.5" /> Delhi, India
                 </span>
               </motion.div>
 
@@ -139,11 +140,11 @@ const DeveloperCard = () => {
                 transition={{ delay: 0.45 }}
                 className="text-sm leading-relaxed text-surface-foreground/70"
               >
-                A pre-final year Computer Science student passionate about building intelligent, user-centric 
-                software. Fascinated by the intersection of <strong className="text-hero-foreground">Generative AI</strong>, 
-                {" "}<strong className="text-hero-foreground">information retrieval</strong>, and{" "}
-                <strong className="text-hero-foreground">full-stack engineering</strong>. ScholarMind is a 
-                testament to that curiosity — a tool designed to make research accessible, grounded, and hallucination-free.
+                I am a voracious student passionate about building intelligent, user-centric 
+                systems. <strong className="text-hero-foreground">CVSPK Tier-1 Scholarship</strong> receiver for securing <strong className="text-hero-foreground">Department Rank-5</strong> in IT. Having experience in <strong className="text-hero-foreground">AI/ML</strong>, 
+                {" "}<strong className="text-hero-foreground">RAG</strong>, and{" "}
+                <strong className="text-hero-foreground">Full-Stack Development</strong> through various projects, I strive to <em>augment</em> myself, day by day. Augmentum is a 
+                testament to that curiosity - a tool designed to make research accessible, grounded, and hallucination-free.
               </motion.p>
 
               <motion.div
@@ -180,7 +181,7 @@ const DeveloperCard = () => {
                 className="mt-5 flex items-center justify-center gap-2 text-xs text-surface-foreground/40 md:justify-start"
               >
                 <Code2 className="h-3.5 w-3.5" />
-                <span>Open to internships, collaborations & freelance opportunities</span>
+                <span>Open to internships and collaborative opportunities</span>
               </motion.div>
             </div>
           </div>

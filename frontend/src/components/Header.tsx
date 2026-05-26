@@ -55,7 +55,7 @@ const Header: React.FC = () => {
               <BookOpen className="h-5 w-5" />
             </div>
             <span className="font-heading text-lg font-bold text-hero-foreground">
-              ScholarMind
+              Augmentum
             </span>
           </Link>
 

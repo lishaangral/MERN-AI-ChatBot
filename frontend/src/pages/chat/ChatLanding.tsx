@@ -2,16 +2,45 @@ import { motion } from "framer-motion";
 import { MessageSquare, FolderPlus, Clock, ArrowRight, Sparkles, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useWorkspace } from "@/hooks/use-workspace";
+import { useEffect, useState } from "react";
+import { getGeminiProjects } from "@/helpers/api-communicator";
+import { toast } from "sonner";
 
 const ChatLanding = () => {
+  type GeminiProject = {
+    _id: string;
+    name: string;
+    projectType: "native" | "plugged";
+    createdAt: string;
+    updatedAt: string;
+  };
+
   const navigate = useNavigate();
-  const { getPluggedProjects, addGeminiStandaloneChat, geminiStandaloneChats, geminiProjects } = useWorkspace();
-  const allGeminiProjects = [...getPluggedProjects(), ...geminiProjects];
-  const recentProject = allGeminiProjects[0];
+  // const { getPluggedProjects, addGeminiStandaloneChat, geminiStandaloneChats, geminiProjects } = useWorkspace();
+  const [allGeminiProjects, setAllGeminiProjects] = useState<GeminiProject | null>(null);
+  const recentProject = allGeminiProjects?.[0];
+
+  const loadProjects = async () => {
+      try {
+        const res = await getGeminiProjects();
+
+        setAllGeminiProjects(res.projects || []);
+      } catch (err) {
+        console.error("Gemini projects error", err);
+      }
+    };
+    
+    useEffect(() => {
+      loadProjects();
+    }, []);
+  
 
   const handleNewStandaloneChat = () => {
-    const chatId = addGeminiStandaloneChat(`Chat ${geminiStandaloneChats.length + 1}`);
-    navigate(`/gemini/chat/${chatId}`);
+    // const chatId = addGeminiStandaloneChat(`Chat ${geminiStandaloneChats.length + 1}`);
+    // navigate(`/gemini/chat/${chatId}`);
+    toast.error("Standalone chat creation is currently unavailable. Please create a new project to start chatting with Gemini.", {
+      duration: 5000,
+    });
   };
 
   return (
@@ -72,7 +101,7 @@ const ChatLanding = () => {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => {
-              if (recentProject) navigate(`/gemini/project/${recentProject.id}`);
+              if (recentProject) navigate(`/gemini/project/${recentProject._id}`);
               else navigate("/gemini/new-project");
             }}
             className="group flex flex-col items-center gap-4 rounded-2xl border border-white/10 bg-surface p-6 text-center transition-colors hover:border-white/20"
@@ -81,7 +110,7 @@ const ChatLanding = () => {
               <Clock className="h-7 w-7 text-surface-foreground/60" />
             </div>
             <div>
-              <h3 className="font-heading text-sm font-semibold text-hero-foreground">Recent</h3>
+              <h3 className="font-heading text-sm font-semibold text-hero-foreground">Open Recent</h3>
               <p className="mt-1 text-xs text-surface-foreground/50">
                 {recentProject ? `"${recentProject.name}"` : "No recent sessions."}
               </p>

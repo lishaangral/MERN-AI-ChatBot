@@ -190,6 +190,10 @@
   scrollbar-width: thin;
   scrollbar-color: hsl(var(--primary) / 0.2) transparent;
 }
+.scrollbar-thin-gemini {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--accent) / 0.2) transparent;
+}
 .scrollbar-thin::-webkit-scrollbar {
   width: 4px;
 }

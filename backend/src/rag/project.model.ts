@@ -6,6 +6,7 @@ export interface IRagProject extends Document {
   ownerId?: string;
   createdAt: Date;
   updatedAt: Date;
+  sourceGeminiProjectId?: string;
 }
 
 const RagProjectSchema: Schema = new Schema(
@@ -13,6 +14,7 @@ const RagProjectSchema: Schema = new Schema(
     name: { type: String, required: true },
     ownerId: { type: String, required: false },
     description: { type: String, required: false },
+    sourceGeminiProjectId: { type: String, default: null },
   },
   { timestamps: true }
 );

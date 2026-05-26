@@ -1,7 +1,8 @@
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import { v4 as uuid } from "uuid";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
-const s3 = new S3Client({
+export const s3 = new S3Client({
   region: process.env.AWS_REGION!,
   credentials: {
     accessKeyId: process.env.AWS_ACCESS_KEY!,
@@ -23,8 +24,8 @@ export const uploadFileToS3 = async (file: any) => {
     await s3.send(command);
 
     return {
-        fileUrl: `https://${process.env.AWS_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`,
-        key
+      key,
+      fileUrl: `https://${process.env.AWS_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`,
     };
   } catch (err) {
     console.error("S3 upload error:", err);
@@ -32,17 +33,43 @@ export const uploadFileToS3 = async (file: any) => {
   }
 };
 
-// export const uploadToS3 = async (file: any) => {
-//   const key = `documents/${uuid()}-${file.originalname}`;
+export const deleteFromS3 = async (fileUrl: string) => {
+  try {
+    const bucket = process.env.AWS_BUCKET!;
 
-//   const command = new PutObjectCommand({
-//     Bucket: process.env.AWS_BUCKET!,
-//     Key: key,
-//     Body: file.buffer,
-//     ContentType: file.mimetype,
-//   });
+    // extract key from URL
+    const key = fileUrl.split(".amazonaws.com/")[1];
 
-//   await s3.send(command);
+    if (!key) throw new Error("Invalid S3 URL");
 
-//   return `https://${process.env.AWS_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
-// };
+    await s3.send(
+      new DeleteObjectCommand({
+        Bucket: bucket,
+        Key: key,
+      })
+    );
+
+    console.log("S3 DELETE SUCCESS:", key);
+
+  } catch (err) {
+    console.error("S3 DELETE ERROR:", err);
+  }
+};
+
+export const generateSignedPreviewUrl = async (fileUrl: string) => {
+
+  const key = fileUrl.split(".amazonaws.com/")[1];
+
+  if (!key) {
+    throw new Error("Invalid S3 key");
+  }
+
+  const command = new GetObjectCommand({
+    Bucket: process.env.AWS_BUCKET!,
+    Key: key,
+  });
+
+  return await getSignedUrl(s3, command, {
+    expiresIn: 3600,
+  });
+};
