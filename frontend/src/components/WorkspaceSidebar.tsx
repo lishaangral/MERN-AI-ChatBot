@@ -2,43 +2,227 @@ import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { Plus, PanelLeftClose, PanelLeft, FolderOpen, MessageSquare, Trash2, ChevronRight, ChevronDown, Zap, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useWorkspace } from "@/hooks/use-workspace";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+  getAllRagProjects,
+  getProjectRagChats,
+  deleteRagChat,
+
+  getGeminiProjects,
+  getGeminiChats,
+  deleteGeminiChat,
+
+} from "@/helpers/api-communicator";
+import { toast } from "react-hot-toast";
 
 interface WorkspaceSidebarProps {
-  workspaceType: "rag" | "chat";
+  workspaceType: "rag" | "gemini";
 }
 
 const WorkspaceSidebar = ({ workspaceType }: WorkspaceSidebarProps) => {
+  type Message = {
+    role: "user" | "assistant";
+    content: string;
+    createdAt: string;
+  };
+
+  type Chat = {
+    _id: string;
+    projectId?: string;
+    workspaceType: "rag" | "gemini";
+    title: string;
+    messages: Message[];
+    createdAt: string;
+    updatedAt: string;
+  };
+
+  type Project = {
+    _id: string;
+    name: string;
+    description?: string;
+    createdAt: string;
+    updatedAt: string;
+  };
+
+  type GeminiChat = {
+    _id: string;
+    title: string;
+    projectId?: string;
+    chatType: "standalone" | "project" | "plugged";
+    createdAt: string;
+    updatedAt: string;
+  };
+
+  type GeminiProject = {
+    _id: string;
+    name: string;
+    projectType: "native" | "plugged";
+    sourceRagProjectId?: string;
+    sourceRagChatId?: string;
+    createdAt: string;
+    updatedAt: string;
+  };
+
   const [collapsed, setCollapsed] = useState(false);
-  const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set(["proj-1", "proj-2"]));
-  const {
-    projects, geminiProjects, deleteChat, getPluggedProjects, geminiStandaloneChats,
-    deleteGeminiStandaloneChat, addGeminiStandaloneChat, deleteGeminiChat,
-  } = useWorkspace();
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [projectChats, setProjectChats] = useState<Record<string, Chat[] | GeminiChat[]>>({});
+  const [expandedProjects, setExpandedProjects] = useState<Record<string, boolean>>({});
   const navigate = useNavigate();
   const location = useLocation();
   const { projectId, chatId } = useParams();
   const basePath = workspaceType === "rag" ? "/rag" : "/gemini";
-  const isGemini = workspaceType === "chat";
+  const isGemini = workspaceType === "gemini";
+  const [geminiChats, setGeminiChats] = useState<GeminiChat[]>([]);
+  const [geminiProjects, setGeminiProjects] = useState<GeminiProject[]>([]);
 
-  const pluggedProjects = isGemini ? getPluggedProjects() : [];
+  // const pluggedProjects = isGemini ? getPluggedProjects() : [];
   const ragProjects = isGemini ? [] : projects;
+  const nativeGeminiProjects = geminiProjects.filter(
+    p => p.projectType === "native"
+  );
+  const pluggedGeminiProjects = geminiProjects.filter(
+    p => p.projectType === "plugged"
+  );
 
-  const toggleProject = (id: string) => {
-    setExpandedProjects((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
+  useEffect(() => {
+    async function load() {
+      try {
+        const [chatRes] = await Promise.all([
+          getGeminiChats(),
+        ]);
+
+        setGeminiChats(chatRes.chats || []);
+      } catch (err) {
+        console.error(err);
       }
-      return next;
-    });
+    }
+    const loadProjects = async () => {
+    try {
+      if (isGemini) {
+        const res = await getGeminiProjects();
+        setGeminiProjects(res.projects || []);
+      } else {
+        const res = await getAllRagProjects();
+        setProjects(res.projects || []);
+      }
+    } catch (err) {
+      console.error("Sidebar projects error", err);
+    }
   };
 
+    load();
+    loadProjects();
+  }, [isGemini]);
+  
+
+  const toggleProject = async (pid: string) => {
+    setExpandedProjects(prev => ({
+      ...prev,
+      [pid]: !prev[pid],
+    }));
+
+    if (projectChats[pid]) return;
+
+    try {
+      if (isGemini) {
+        const res = await getGeminiChats();
+
+        const filtered = (res.chats || []).filter(
+          (c: GeminiChat) => c.projectId === pid
+        );
+
+        setProjectChats(prev => ({
+          ...prev,
+          [pid]: filtered,
+        }));
+
+      } else {
+        const res = await getProjectRagChats(pid);
+
+        setProjectChats(prev => ({
+          ...prev,
+          [pid]: res.chats || [],
+        }));
+      }
+
+    } catch (err) {
+      console.error("Sidebar chats error", err);
+    }
+  };
+
+  // const handleProjectClick = (projectId: string) => {
+  //   navigate(`/rag/project/${projectId}`);
+  // };
+
+  const handleProjectClick = (pid: string) => {
+    if (isGemini) {
+      navigate(`/gemini/project/${pid}`);
+    } else {
+      navigate(`/rag/project/${pid}`);
+    }
+  };
+
+  // const handleChatClick = (projectId: string, chatId: string) => {
+  //   navigate(`/rag/project/${projectId}/chat/${chatId}`);
+  // };
+
+  const handleChatClick = (
+    pid: string,
+    cid: string
+  ) => {
+
+    if (isGemini) {
+      navigate(`/gemini/project/${pid}/chat/${cid}`);
+    } else {
+      navigate(`/rag/project/${pid}/chat/${cid}`);
+    }
+  };
+
+  const handleDeleteChat = async (
+    pid: string,
+    cid: string
+  ) => {
+
+    if (!cid || !pid) return;
+
+    try {
+
+      if (isGemini) {
+        await deleteGeminiChat(cid);
+
+        const res = await getGeminiChats();
+
+        const filtered = (res.chats || []).filter(
+          (c: GeminiChat) => c.projectId === pid
+        );
+
+        setProjectChats(prev => ({
+          ...prev,
+          [pid]: filtered,
+        }));
+
+      } else {
+
+        await deleteRagChat(cid);
+
+        const res = await getProjectRagChats(pid);
+
+        setProjectChats(prev => ({
+          ...prev,
+          [pid]: res.chats || [],
+        }));
+      }
+
+      toast.success("Chat deleted");
+
+    } catch (err) {
+      toast.error("Failed to delete chat");
+    }
+  };
+  
   const renderProjectList = (projectList: typeof projects, label: string, isPluggedSection = false) => {
     if (collapsed || projectList.length === 0) return null;
     return (
@@ -49,15 +233,16 @@ const WorkspaceSidebar = ({ workspaceType }: WorkspaceSidebarProps) => {
           </span>
         </div>
         {projectList.map((project) => (
-          <div key={project.id} className="mb-1">
+          <div key={project._id} className={"mb-1"}>
             <button
               onClick={() => {
-                navigate(`${basePath}/project/${project.id}`);
-                if (!expandedProjects.has(project.id)) toggleProject(project.id);
+                handleProjectClick(project._id);
+                if (!expandedProjects[project._id]) toggleProject(project._id);
+                // console.log("PROJECT ITEM:", project);
               }}
               className={cn(
                 "flex w-full items-center gap-2 rounded-xl px-2 py-2 text-left text-sm transition-all hover:bg-sidebar-accent",
-                projectId === project.id && !chatId
+                projectId === project._id && !chatId
                   ? isGemini
                     ? "bg-accent/10 text-accent font-medium shadow-sm"
                     : "bg-sidebar-accent text-sidebar-primary font-medium shadow-sm"
@@ -65,10 +250,11 @@ const WorkspaceSidebar = ({ workspaceType }: WorkspaceSidebarProps) => {
               )}
             >
               <div
-                onClick={(e) => { e.stopPropagation(); toggleProject(project.id); }}
+                // onClick={(e) => { e.stopPropagation(); toggleProject(project._id); }}
+                onClick={(e) => { e.stopPropagation(); toggleProject(project._id); }}
                 className="shrink-0 rounded p-0.5 hover:bg-sidebar-accent"
               >
-                {expandedProjects.has(project.id)
+                {expandedProjects[project._id]
                   ? <ChevronDown className="h-3.5 w-3.5 text-sidebar-foreground/40" />
                   : <ChevronRight className="h-3.5 w-3.5 text-sidebar-foreground/40" />}
               </div>
@@ -78,10 +264,9 @@ const WorkspaceSidebar = ({ workspaceType }: WorkspaceSidebarProps) => {
                 <Zap className="h-3 w-3 shrink-0 text-accent/50 ml-auto" />
               )}
             </button>
-
             {!collapsed && (
               <AnimatePresence>
-                {expandedProjects.has(project.id) && (
+                {expandedProjects[project._id] && (
                   <motion.div
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: "auto", opacity: 1 }}
@@ -89,20 +274,17 @@ const WorkspaceSidebar = ({ workspaceType }: WorkspaceSidebarProps) => {
                     transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
                     className="overflow-hidden"
                   >
-                    {project.chats.map((chat) => (
+                    {projectChats[project._id]?.map((chat) => (
                       <div
-                        key={chat.id}
+                        key={chat._id}
                         className={cn(
                           "group ml-6 flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs transition-all hover:bg-sidebar-accent",
-                          chatId === chat.id
-                            ? isGemini
-                              ? "bg-accent/10 text-accent font-medium"
-                              : "bg-sidebar-accent/80 text-sidebar-primary font-medium"
-                            : "text-sidebar-foreground/60"
+                          isGemini ? "scrollbar-thin-gemini" : "scrollbar-thin"
                         )}
                       >
                         <button
-                          onClick={() => navigate(`${basePath}/project/${project.id}/chat/${chat.id}`)}
+                          // onClick={() => navigate(`${basePath}/project/${project._id}/chat/${chat._id}`)}
+                          onClick={() => handleChatClick(project._id, chat._id)}
                           className="flex flex-1 items-center gap-2 truncate"
                         >
                           {isGemini ? (
@@ -110,18 +292,17 @@ const WorkspaceSidebar = ({ workspaceType }: WorkspaceSidebarProps) => {
                           ) : (
                             <MessageSquare className="h-3 w-3 shrink-0" />
                           )}
-                          <span className="truncate">{chat.name}</span>
+                          <span className="truncate">{chat.title}</span>
                         </button>
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <div
                               onClick={(e) => {
                                 e.stopPropagation();
-                                if (isGemini) {
-                                  deleteGeminiChat(project.id, chat.id);
-                                } else {
-                                  deleteChat(project.id, chat.id);
-                                }
+                                handleDeleteChat(
+                                  project._id,
+                                  chat._id
+                                );
                               }}
                               className="rounded p-0.5 opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100"
                             >
@@ -132,7 +313,7 @@ const WorkspaceSidebar = ({ workspaceType }: WorkspaceSidebarProps) => {
                         </Tooltip>
                       </div>
                     ))}
-                    {project.chats.length === 0 && (
+                    {projectChats[project._id]?.length === 0 && (
                       <p className="ml-6 px-2 py-1.5 text-xs italic text-sidebar-foreground/30">No chats yet</p>
                     )}
                   </motion.div>
@@ -148,13 +329,14 @@ const WorkspaceSidebar = ({ workspaceType }: WorkspaceSidebarProps) => {
   const renderCollapsedProjects = (projectList: typeof projects) => {
     if (!collapsed) return null;
     return projectList.map((project) => (
-      <Tooltip key={project.id}>
+      <Tooltip key={project._id}>
         <TooltipTrigger asChild>
           <button
-            onClick={() => navigate(`${basePath}/project/${project.id}`)}
+            // onClick={() => navigate(`${basePath}/project/${project._id}`)}
+            onClick={() => handleProjectClick(project._id)}
             className={cn(
               "flex w-full items-center justify-center rounded-xl p-2 transition-colors hover:bg-sidebar-accent",
-              projectId === project.id
+              projectId === project._id
                 ? isGemini ? "bg-accent/10 text-accent" : "bg-sidebar-accent text-sidebar-primary"
                 : "text-sidebar-foreground/60"
             )}
@@ -221,51 +403,51 @@ const WorkspaceSidebar = ({ workspaceType }: WorkspaceSidebarProps) => {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto px-2 py-2 scrollbar-thin">
+      <div className={cn("flex-1 overflow-y-auto px-2 py-2", isGemini ? "scrollbar-thin-gemini" : "scrollbar-thin")}>
         {isGemini ? (
           <>
             {/* Plugged Projects */}
-            {renderCollapsedProjects(pluggedProjects)}
-            {renderProjectList(pluggedProjects, "Plugged Projects", true)}
+            {renderCollapsedProjects(pluggedGeminiProjects)}
+            {renderProjectList(pluggedGeminiProjects, "Plugged Projects", true)}
 
             {/* Gemini-native Projects */}
-            {renderCollapsedProjects(geminiProjects)}
-            {renderProjectList(geminiProjects, "Gemini Projects")}
+            {renderCollapsedProjects(nativeGeminiProjects)}
+            {renderProjectList(nativeGeminiProjects, "Gemini Projects")}
 
-            {!collapsed && pluggedProjects.length === 0 && geminiProjects.length === 0 && (
+            {!collapsed && pluggedGeminiProjects.length === 0 && nativeGeminiProjects.length === 0 && (
               <p className="px-2 py-4 text-center text-xs text-sidebar-foreground/40">
                 No projects yet. Plug a RAG chat or create a new Gemini project.
               </p>
             )}
 
             {/* Standalone chats */}
-            {!collapsed && (
+            {/* {!collapsed && (
               <>
                 <div className="mb-1 mt-4 px-2 pt-2 pb-1 border-t border-accent/10">
                   <span className="text-[10px] font-semibold uppercase tracking-wider text-accent/50">Your Chats</span>
                 </div>
-                {geminiStandaloneChats.length === 0 ? (
+                {geminiChats.length === 0 ? (
                   <p className="px-2 py-2 text-center text-xs text-sidebar-foreground/40">No standalone chats yet.</p>
                 ) : (
-                  geminiStandaloneChats.map((chat) => (
+                  geminiChats.map((chat) => (
                     <div
-                      key={chat.id}
+                      key={chat._id}
                       className={cn(
                         "group flex items-center gap-2 rounded-xl px-3 py-2 text-xs transition-all hover:bg-sidebar-accent",
-                        chatId === chat.id ? "bg-accent/10 text-accent font-medium" : "text-sidebar-foreground/60"
+                        chatId === chat._id ? "bg-accent/10 text-accent font-medium" : "text-sidebar-foreground/60"
                       )}
                     >
                       <button
-                        onClick={() => navigate(`/gemini/chat/${chat.id}`)}
+                        onClick={() => navigate(`/gemini/chat/${chat._id}`)}
                         className="flex flex-1 items-center gap-2 truncate"
                       >
                         <Sparkles className="h-3 w-3 shrink-0 text-accent" />
-                        <span className="truncate">{chat.name}</span>
+                        <span className="truncate">{chat.title}</span>
                       </button>
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <div
-                            onClick={(e) => { e.stopPropagation(); deleteGeminiStandaloneChat(chat.id); }}
+                            onClick={(e) => { e.stopPropagation(); deleteGeminiStandaloneChat(chat._id); }}
                             className="rounded p-0.5 opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100"
                           >
                             <Trash2 className="h-3 w-3" />
@@ -289,8 +471,8 @@ const WorkspaceSidebar = ({ workspaceType }: WorkspaceSidebarProps) => {
                     <Plus className="h-3 w-3" /> New Chat
                   </Button>
                 </div>
-              </>
-            )}
+              </> 
+            )}*/}
           </>
         ) : (
           <>

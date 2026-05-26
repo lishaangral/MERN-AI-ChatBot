@@ -1,52 +1,233 @@
 import { motion } from "framer-motion";
-import { FolderPlus, Upload, FileText, X, HelpCircle, Sparkles } from "lucide-react";
+import { FolderPlus, Upload, FileText, X, Check, HelpCircle, Sparkles, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useWorkspace } from "@/hooks/use-workspace";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { toast } from "react-hot-toast";
+import { uploadGeminiFile, createRagProject, uploadRagDocument, createGeminiProject } from "@/helpers/api-communicator";
+import { cn } from "@/lib/utils";
 
 const NewProject = () => {
+
+  type UploadFile = {
+    file: File;
+    id: string; // unique identifier for retrying failed uploads
+    name: string;
+    size: number;
+    status: "pending" | "uploading" | "success" | "failed";
+    progress: number;
+    retries?: number;
+    error?: string;
+  };
+
+  const [filesState, setFilesState] = useState<UploadFile[]>([]);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [files, setFiles] = useState<File[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const isGemini = location.pathname.startsWith("/gemini");
-  const { addProject, addGeminiProject, addDocument } = useWorkspace();
+  const [loading, setLoading] = useState(false);
+  const [projectId, setProjectId] = useState<string | null>(null);
+  // const { addProject, addGeminiProject, addDocument } = useWorkspace();
   const basePath = isGemini ? "/gemini" : "/rag";
+
+  useEffect(() => {
+    const saved = localStorage.getItem("draftProjectId");
+    if (saved) setProjectId(saved);
+  }, []);
+
+  const handleFiles = (selected: FileList | null) => {
+    if (!selected) return;
+
+    const mappedFiles: UploadFile[] = Array.from(selected).map((file) => ({
+      file,
+      id: crypto.randomUUID(), 
+      name: file.name,
+      size: file.size,
+      status: "pending",
+      progress: 0,
+      retries: 0,
+    }));
+
+    setFilesState((prev) => [...prev, ...mappedFiles]);
+  };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
-    setDragOver(false);
-    const droppedFiles = Array.from(e.dataTransfer.files).filter((f) =>
-      ["application/pdf", "text/plain", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"].includes(f.type)
-    );
-    setFiles((prev) => [...prev, ...droppedFiles]);
+    handleFiles(e.dataTransfer.files);
   };
 
   const removeFile = (index: number) => {
-    setFiles((prev) => prev.filter((_, i) => i !== index));
+    setFilesState((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleCreate = () => {
-    if (!name.trim()) return;
-    const projectId = isGemini
-      ? addGeminiProject(name.trim(), description.trim() || undefined)
-      : addProject(name.trim(), description.trim() || undefined);
-    files.forEach((file) => {
-      const ext = file.name.split(".").pop()?.toLowerCase();
-      const type = ext === "pdf" ? "pdf" : ext === "docx" ? "docx" : "txt";
-      addDocument(projectId, {
-        name: file.name,
-        type: type as "pdf" | "docx" | "txt",
-        size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
-      });
-    });
-    navigate(`${basePath}/project/${projectId}`);
+  const handleCreate = async () => {
+    if (!name.trim()) {
+      toast.error("Project name required");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      let pid = projectId;
+      console.log("PROJECT ID:", pid);
+
+      if (!pid) {
+        // const res = await createRagProject({ name, description });
+        const res = isGemini
+          ? await createGeminiProject({
+              name,
+              description,
+              projectType: "native",
+            })
+          : await createRagProject({
+              name,
+              description,
+            });
+
+        // pid = res?.projectId as string;
+        pid = isGemini
+          ? res?.project?._id as string
+          : res?.projectId as string;
+
+        if (!pid) {
+          throw new Error("Project ID not returned");
+        }
+
+        setProjectId(pid);
+        localStorage.setItem("draftProjectId", pid);
+        console.log("PROJECT CREATED:", pid);
+      }
+
+      const allSuccess = await uploadAllFiles(pid);
+
+      if (!allSuccess) {
+        toast.error("Some files failed to upload. Please retry them.");
+        setLoading(false);
+        return;
+      } else {
+        localStorage.removeItem("draftProjectId");
+        toast.success("Project created successfully");
+        console.log("NAVIGATING TO:", pid);
+        navigate(`${basePath}/project/${pid}`);
+      } 
+           
+    } catch (err) {
+      console.error("CREATE PROJECT ERROR:", err);
+      toast.error("Project creation failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const retryUpload = async (fileId: string) => {
+    if (!projectId) {
+      toast.error("Project not initialized");
+      return;
+    }
+
+    const file = filesState.find((f) => f.id === fileId);
+    if (!file) return;
+
+    await uploadSingle(file, projectId);
+  };
+
+  const uploadSingle = async (
+      f: UploadFile, pid: string
+    ) => {
+  
+      try {
+  
+        setFilesState((prev) =>
+          prev.map((p) =>
+            p.id === f.id
+              ? {
+                  ...p,
+                  status: "uploading",
+                  progress: 0,
+                }
+              : p
+          )
+        );
+  
+        if (isGemini) {
+          await uploadGeminiFile(
+            pid,
+            f.file
+          );
+        } else {
+          await uploadRagDocument(
+            pid,
+            f.file,
+            (progress) => {
+              setFilesState((prev) =>
+                prev.map((p) =>
+                  p.id === f.id
+                    ? {
+                        ...p,
+                        progress,
+                      }
+                    : p
+                )
+              );
+            }
+          );
+        }
+  
+        setFilesState((prev) =>
+          prev.map((p) =>
+            p.id === f.id
+              ? {
+                  ...p,
+                  status: "success",
+                  progress: 100,
+                }
+              : p
+          )
+        );
+  
+        return true;
+  
+      } catch (err) {
+  
+        console.error(err);
+  
+        setFilesState((prev) =>
+          prev.map((p) =>
+            p.id === f.id
+              ? {
+                  ...p,
+                  status: "failed",
+                }
+              : p
+          )
+        );
+  
+        toast.error(
+          err?.response?.data?.error ||
+          `Failed to upload ${f.name}`
+        );
+  
+        return false;
+      }
+    };
+  
+  const uploadAllFiles = async (pid: string) => {
+    let allSuccess = true;
+
+    for (const f of filesState) {
+      if (f.status === "pending" || f.status === "failed") {
+        const success = await uploadSingle(f, pid);
+        if (!success) allSuccess = false;
+      }
+    }
+    return allSuccess;
   };
 
   const accentCls = isGemini ? "text-accent" : "text-primary";
@@ -57,7 +238,7 @@ const NewProject = () => {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mx-auto max-w-2xl"
+        className={cn("mx-auto max-w-2xl", isGemini ? "scrollbar-thin-gemini" : "scrollbar-thin")}
       >
         <div className="flex items-center gap-3">
           <div className={`rounded-2xl p-3 shadow-lg ${isGemini ? "bg-accent/10 shadow-accent/5" : "bg-primary/10 shadow-primary/5"}`}>
@@ -75,7 +256,7 @@ const NewProject = () => {
           </div>
         </div>
 
-        <div className="mt-8 space-y-6">
+        <div className={cn("mt-8 space-y-6", isGemini ? "scrollbar-thin-gemini" : "scrollbar-thin")}>
           {/* Project Name */}
           <div className="space-y-2">
             <div className="flex items-center gap-2">
@@ -159,9 +340,7 @@ const NewProject = () => {
                   multiple
                   accept=".pdf,.docx,.txt"
                   className="hidden"
-                  onChange={(e) => {
-                    if (e.target.files) setFiles((prev) => [...prev, ...Array.from(e.target.files!)]);
-                  }}
+                  onChange={(e) => handleFiles(e.target.files)}
                 />
                 <span className={`mt-3 inline-block cursor-pointer rounded-xl px-4 py-2 text-sm font-medium transition-all hover:shadow-sm ${isGemini ? "bg-accent/10 text-accent hover:bg-accent/20" : "bg-primary/10 text-primary hover:bg-primary/20"}`}>
                   Browse Files
@@ -191,10 +370,10 @@ const NewProject = () => {
           </div>
 
           {/* File list */}
-          {files.length > 0 && (
+          {filesState.length > 0 && (
             <div className="space-y-2">
-              <p className="text-xs font-medium text-surface-foreground/50">{files.length} file{files.length !== 1 ? "s" : ""} selected</p>
-              {files.map((file, i) => (
+              <p className="text-xs font-medium text-surface-foreground/50">{filesState.length} file{filesState.length !== 1 ? "s" : ""} selected</p>
+              {filesState.map((file, i) => (
                 <div
                   key={i}
                   className="flex items-center justify-between rounded-xl border border-white/5 bg-white/[0.03] px-3 py-2 transition-all hover:border-white/10"
@@ -206,12 +385,31 @@ const NewProject = () => {
                       ({(file.size / (1024 * 1024)).toFixed(1)} MB)
                     </span>
                   </div>
-                  <button
-                    onClick={() => removeFile(i)}
-                    className="rounded-lg p-1 text-surface-foreground/40 transition-colors hover:text-destructive shrink-0"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
+
+                  <div className="flex items-center gap-2"> 
+                    {file.status === "success" && <Check className="h-4 w-4" />}
+                    {file.status === "failed" && (
+                      <button
+                      className="rounded-lg p-1 text-surface-foreground/40 transition-colors hover:text-destructive shrink-0"
+                      onClick={() => retryUpload(file.id)}>
+                        <RefreshCw className="h-4 w-4" />
+                      </button>
+                    )}
+                    <button
+                      onClick={() => removeFile(i)}
+                      className="rounded-lg p-1 text-surface-foreground/40 transition-colors hover:text-destructive shrink-0"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                    {file.status === "uploading" && (
+                      <div className="w-full h-1 bg-gray-300">
+                        <div
+                          className="h-1 bg-primary"
+                          style={{ width: `${file.progress}%` }}
+                        />
+                      </div>
+                    )}
+                  </div>                  
                 </div>
               ))}
             </div>

@@ -3,11 +3,39 @@ import { FolderPlus, Clock, FileSearch, ArrowRight, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useWorkspace } from "@/hooks/use-workspace";
+import { useEffect, useState } from "react";
+import { getAllRagProjects } from "@/helpers/api-communicator";
 
 const RagLanding = () => {
+
+  type Project = {
+    _id: string;
+    name: string;
+    description?: string;
+    createdAt: string;
+    updatedAt: string;
+  };
+
   const navigate = useNavigate();
-  const { projects } = useWorkspace();
+  // const projects = useWorkspace();
+  
+  const [projects, setProjects] = useState<Project[]>([]);
+  // const isGemini = workspaceType === "chat";
+  // const ragProjects = isGemini ? [] : projects;
   const recentProject = projects[0];
+
+  const loadProjects = async () => {
+    try {
+      const res = await getAllRagProjects();
+      setProjects(res.projects || []);
+    } catch (err) {
+      console.error("RAG projects error", err);
+    }
+  };
+  
+  useEffect(() => {
+    loadProjects();
+  }, []);
 
   return (
     <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center p-6">
@@ -24,7 +52,7 @@ const RagLanding = () => {
             RAG Workspace
           </h1>
           <p className="mx-auto mt-3 max-w-md text-surface-foreground/60">
-            Upload your research documents and get citation-backed, fact-grounded responses. No hallucinations — only answers from your content.
+            Upload your research documents and get citation-backed, fact-grounded responses. No hallucinations - only answers from your content.
           </p>
           <div className="mt-4 flex items-center justify-center gap-2 text-xs text-surface-foreground/40">
             <Zap className="h-3 w-3 text-accent" />
@@ -61,7 +89,7 @@ const RagLanding = () => {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => {
-              if (recentProject) navigate(`/rag/project/${recentProject.id}`);
+              if (recentProject) navigate(`/rag/project/${recentProject._id}`);
               else navigate("/rag/new-project");
             }}
             className="group flex flex-col items-center gap-4 rounded-2xl border border-white/10 bg-surface p-8 text-center transition-colors hover:border-white/20"

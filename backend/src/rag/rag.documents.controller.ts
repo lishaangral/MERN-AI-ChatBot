@@ -13,12 +13,24 @@ export async function getDocumentsInProject(req: Request, res: Response) {
       .sort({ uploadedAt: -1 })
       .toArray();
 
-    res.json({ documents: docs });
+    return res.json({
+      documents: docs.map((d) => ({
+        docId: d.docId,
+        filename: d.filename,
+        fileUrl: d.fileUrl,
+        uploadedAt: d.uploadedAt,
+        size: d.size,
+      })),
+    });
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to fetch documents" });
   }
 }
+
+import { deleteFromS3 } from "../utils/s3"; // if exists
+import { SignalZero } from "lucide-react";
 
 export async function deleteDocument(req: Request, res: Response) {
   try {
@@ -27,15 +39,27 @@ export async function deleteDocument(req: Request, res: Response) {
     const docCol = getRagDocumentsCollection();
     const chunkCol = getRagCollection();
 
-    // Delete document entry
-    await docCol.deleteOne({ docId });
+    const doc = await docCol.findOne({ docId });
 
-    // Delete chunks belonging to this doc
+    if (!doc) {
+      return res.status(404).json({ error: "Document not found" });
+    }
+
+    // delete chunks
     await chunkCol.deleteMany({ docId });
 
-    res.json({ message: "Document deleted successfully" });
+    // delete metadata
+    await docCol.deleteOne({ docId });
+
+    // delete from S3
+    if (doc.fileUrl) {
+      await deleteFromS3(doc.fileUrl);
+    }
+
+    return res.json({ success: true, message: "Document deleted successfully" });
+
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to delete document" });
+    console.error("DELETE DOC ERROR:", err);
+    return res.status(500).json({ error: "Failed to delete document" });
   }
 }

@@ -43,13 +43,14 @@ const Signup: React.FC = () => {
         toast.success("Account created successfully", { id: "signup" });
 
         navigate("/login");
-    } catch (err: any) {
+    } catch (err) {
         console.error("Signup error", err);
 
-        const backendMessage =
-        err.response?.data?.errors?.[0]?.msg ||
-        err.response?.data || err.response?.data?.message
-        err.message || "Signup failed. Please try again.";
+        const backendMessage = err.response?.data?.errors?.[0]?.msg ||
+        err.response?.data?.message ||
+        err.response?.data || 
+        err.message || 
+        "Signup failed. Please try again.";
 
         toast.error(backendMessage, { id: "signup" });
     } finally {
@@ -69,7 +70,7 @@ const Signup: React.FC = () => {
         <div className="rounded-2xl border border-white/10 bg-surface p-8 shadow-2xl">
           <div className="mb-6 text-center">
             <h1 className="font-heading text-2xl font-bold text-hero-foreground">Create Your Account</h1>
-            <p className="mt-1 text-sm text-surface-foreground/70">Join ScholarMind — it's completely free</p>
+            <p className="mt-1 text-sm text-surface-foreground/70">Join Augmentum - it's completely free</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">

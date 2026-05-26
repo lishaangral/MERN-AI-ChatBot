@@ -6,74 +6,295 @@ import { Button } from "@/components/ui/button";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useWorkspace } from "@/hooks/use-workspace";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
+import { plugGeminiProjectToRag, deleteGeminiProject, createRagChatAPI, deleteRagChat, deleteRagProject, deleteRagDocument, getProjectRagChats, getRagChatById, getRagDocuments, getRagProjectById, getGeminiProjectById, getGeminiChats, createGeminiChatAPI, getGeminiChatById, deleteGeminiChat, getGeminiFiles, deleteGeminiFile } from "@/helpers/api-communicator";
+import { toast } from "react-hot-toast";
+import DocumentPreviewModal from "./DocumentPreviewModel";
+import { cn } from "@/lib/utils";
 
 const ProjectPage = () => {
+
+  type Message = {
+    role: "user" | "assistant";
+    content: string;
+    createdAt: string;
+  };
+
+  type Chat = {
+    _id: string;
+    projectId?: string;
+    workspaceType: "rag" | "gemini";
+    title: string;
+    messages: Message[];
+    createdAt: string;
+    updatedAt: string;
+  };
+
+  type Project = {
+    _id: string;
+    name: string;
+    description?: string;
+    createdAt: string;
+    updatedAt: string;
+  };
+
+  type Document = {
+    docId: string;
+    filename: string;
+    fileUrl: string;
+    uploadedAt: string;
+    size: number;
+  };
+
+  type GeminiChat = {
+    _id: string;
+    title: string;
+    projectId?: string;
+    chatType: "standalone" | "project" | "plugged";
+    createdAt: string;
+    updatedAt: string;
+  };
+
+  type GeminiDocument = {
+    _id: string;
+    filename: string;
+    fileUrl: string;
+    uploadedAt: string;
+    size: number;
+  };
+
+  type GeminiProject = {
+    _id: string;
+    name: string;
+    projectType: "native" | "plugged";
+    createdAt: string;
+    updatedAt: string;
+  };
+
   const { projectId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const isGemini = location.pathname.startsWith("/gemini");
-  const { getProjectForWorkspace, deleteProject, deleteGeminiProject, deleteDocument, addChat, deleteChat, addGeminiChat, deleteGeminiChat, plugProjectToRag } = useWorkspace();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [docsModalOpen, setDocsModalOpen] = useState(false);
   const [chatsModalOpen, setChatsModalOpen] = useState(false);
   const [showPlugRagSuccess, setShowPlugRagSuccess] = useState(false);
-  const project = getProjectForWorkspace(projectId!, isGemini);
   const basePath = isGemini ? "/gemini" : "/rag";
-  const isGeminiNativeProject = projectId?.startsWith("gproj-");
 
-  if (!project) {
+  const [project, setProject] = useState<Project | null>(null);
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [chats, setChats] = useState<Chat[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [allFilesEmbedded, setAllFilesEmbedded] = useState(false);
+  const [ragProjectId, setRagProjectId] = useState("");
+
+  const [previewDoc, setPreviewDoc] = useState<Document | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewPage, setPreviewPage] = useState<number>(1);
+
+  useEffect(() => {
+
+    const loadAll = async () => {
+      if (!projectId) return;
+
+      try {
+        setLoading(true);
+
+          // 1. PROJECT
+          const proj = isGemini
+            ? await getGeminiProjectById(projectId!)
+            : await getRagProjectById(projectId!);
+          setProject(proj.project);
+          setRagProjectId(proj.project.pluggedRagProjectId || "");
+
+          if (isGemini) {
+            setAllFilesEmbedded(
+              proj.allFilesEmbedded || false
+            );
+          }
+
+          // 2. DOCUMENTS
+          const res = isGemini
+            ? await getGeminiFiles(projectId!)
+            : await getRagDocuments(projectId!);
+            
+          if (isGemini) {
+            const docs =
+              (res.files || []).map(
+                (f: GeminiDocument) => ({
+                  docId: f._id,
+                  filename: f.filename,
+                  fileUrl: f.fileUrl,
+                  size: f.size,
+                  uploadedAt: f.uploadedAt,
+                })
+              );
+            setDocuments(docs);
+          } else {
+            setDocuments(
+              res.documents || []
+            );
+          }
+
+          // 3. CHATS
+          const chatsRes = isGemini
+            ? await getGeminiChats()
+            : await getProjectRagChats(projectId!);
+          const chatsList = isGemini
+            ? (chatsRes.chats || []).filter(
+                (c: GeminiChat) =>
+                  c.projectId === projectId
+              )
+            : chatsRes.chats || [];
+          setChats(chatsList);
+
+          // 4. AUTO SELECT FIRST CHAT
+          if (chatsList.length > 0) {
+            const first = await getRagChatById(chatsList[0]._id);
+            // setActiveChat(first.chat);
+        }
+
+      } catch (err) {
+        console.error("LOAD ERROR", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadAll();
+  }, [projectId, isGemini]);
+
+  // if (!project) {
+  //   return (
+  //     <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center">
+  //       <p className="text-surface-foreground/50">Project not found.</p>
+  //     </div>
+  //   );
+  // }
+
+  if (loading)  {
     return (
       <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center">
-        <p className="text-surface-foreground/50">Project not found.</p>
+        <p className="text-surface-foreground/50">Loading...</p>
       </div>
     );
   }
 
-  const handleNewChat = () => {
-    if (isGemini) {
-      const chatId = addGeminiChat(project.id, `Gemini Chat ${project.chats.length + 1}`);
-      navigate(`${basePath}/project/${project.id}/chat/${chatId}`);
-    } else {
-      const chatId = addChat(project.id, `Chat ${project.chats.length + 1}`);
-      navigate(`${basePath}/project/${project.id}/chat/${chatId}`);
+  const handleCreateChat = async () => {
+    try {
+      const res = isGemini
+        ? await createGeminiChatAPI({
+            projectId,
+            title: "New Chat",
+            chatType: "project",
+          })
+        : await createRagChatAPI(
+            projectId!, "rag", "New Chat");
+      const chatId = res.chat._id;
+      if (!chatId) {
+        toast.error("Failed to create chat");
+        return;
+      }
+      const newChat = res.chat;
+
+      setChats((prev) => [newChat, ...prev]);
+      // setActiveChat(newChat);
+
+      navigate(`${basePath}/project/${project._id}/chat/${chatId}`);
+
+    } catch (err) {
+      console.error("CREATE CHAT ERROR", err);
     }
+  };
+
+  const handleSelectChat = async (chatId: string) => {
+    const res = isGemini
+      ? await getGeminiChatById(chatId)
+      : await getRagChatById(chatId);
+    // setActiveChat(res.chat);
+  };
+
+
+  const handleDeleteChat = async (chatId: string) => {
+    if (!chatId || !projectId) return;
+
+    try {
+        if (isGemini) {
+            await deleteGeminiChat(chatId);
+        } else {
+            await deleteRagChat(chatId);
+        }
+
+      toast.success("Chat deleted");
+
+      // navigate(`/rag/project/${projectId}`);
+      setChats((prev) => prev.filter((c) => c._id !== chatId));
+
+    } catch (err) {
+      toast.error("Failed to delete chat");
+    }
+  };
+
+  const handleDeleteDoc = async (docId: string) => {
+    if (isGemini) {
+      await deleteGeminiFile(docId);
+    } else {
+      await deleteRagDocument(docId);
+    }
+    toast.success("Document deleted");
+    setDocuments((prev) =>
+      prev.filter((d) => d.docId !== docId)
+    );
   };
 
   const handleDeleteProject = () => {
-    if (isGeminiNativeProject) {
-      deleteGeminiProject(project.id);
+    if (isGemini) {
+      deleteGeminiProject(project._id);
     } else {
-      deleteProject(project.id);
+      deleteRagProject(project._id);
     }
+    toast.success("Project deleted");
     navigate(basePath);
   };
 
-  const handlePlugProjectToRag = () => {
-    setShowPlugRagSuccess(true);
-    setTimeout(() => {
-      plugProjectToRag(project.id);
+const handlePlugProjectToRag = async () => {
+    if (!projectId) return;
+    try {
+      setShowPlugRagSuccess(true);
+      const res = await plugGeminiProjectToRag(projectId);
+      setAllFilesEmbedded(true);
+      setTimeout(() => {
+        setShowPlugRagSuccess(false);
+        navigate(`/rag/project/${res.ragProjectId}`);
+      }, 1500);
+    } catch (err) {
+      console.error(err);
       setShowPlugRagSuccess(false);
-      navigate("/rag");
-    }, 2000);
+      toast.error("Failed to sync to RAG");
+    }
   };
 
   const accentCls = isGemini ? "text-accent" : "text-primary";
 
-  const DocumentRow = ({ doc, compact = false }: { doc: typeof project.documents[0]; compact?: boolean }) => (
+  const DocumentRow = ({ doc, compact = false }: { doc: typeof documents[0]; compact?: boolean }) => (
     <div className="group flex items-center justify-between rounded-xl border border-white/5 bg-white/[0.03] px-3 py-2.5 transition-all hover:border-primary/20 hover:shadow-sm hover:shadow-primary/5">
       <div className="flex items-center gap-2 text-sm min-w-0 flex-1">
         <FileText className="h-4 w-4 shrink-0 text-primary/60" />
-        <span className="truncate text-surface-foreground/80 overflow-x-auto scrollbar-hide">{doc.name}</span>
-        {!compact && <span className="text-xs text-surface-foreground/30 shrink-0">{doc.size}</span>}
+        <span className="truncate text-surface-foreground/80 overflow-x-auto scrollbar-hide">{doc.filename}</span>
+        {!compact && <span className="text-xs text-surface-foreground/30 shrink-0">({(doc.size / (1024 * 1024)).toFixed(1)} MB)</span>}
       </div>
       <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 shrink-0 ml-2">
         <Tooltip>
           <TooltipTrigger asChild>
-            <button className="rounded-lg p-1 text-surface-foreground/40 hover:text-primary transition-colors">
+            <button 
+            onClick={() => {
+              setPreviewDoc(doc);
+              setPreviewPage(1);
+              setPreviewOpen(true);
+            }}
+            className="rounded-lg p-1 text-surface-foreground/40 hover:text-primary transition-colors">
               <Eye className="h-3.5 w-3.5" />
             </button>
           </TooltipTrigger>
@@ -82,7 +303,7 @@ const ProjectPage = () => {
         <Tooltip>
           <TooltipTrigger asChild>
             <button
-              onClick={() => deleteDocument(project.id, doc.id)}
+              onClick={() => handleDeleteDoc(doc.docId)}
               className="rounded-lg p-1 text-surface-foreground/40 hover:text-destructive transition-colors"
             >
               <Trash2 className="h-3.5 w-3.5" />
@@ -94,10 +315,10 @@ const ProjectPage = () => {
     </div>
   );
 
-  const ChatRow = ({ chat }: { chat: typeof project.chats[0] }) => (
+  const ChatRow = ({ chat }: { chat: typeof chats[0] }) => (
     <div className={`group flex items-center justify-between rounded-xl border border-white/5 bg-white/[0.03] px-3 py-2.5 transition-all ${isGemini ? "hover:border-accent/20 hover:shadow-sm hover:shadow-accent/5" : "hover:border-accent/20 hover:shadow-sm hover:shadow-accent/5"}`}>
       <button
-        onClick={() => navigate(`${basePath}/project/${project.id}/chat/${chat.id}`)}
+        onClick={() => navigate(`${basePath}/project/${project._id}/chat/${chat._id}`)}
         className="flex flex-1 items-center gap-2 text-sm text-surface-foreground/80 min-w-0"
       >
         {isGemini ? (
@@ -105,18 +326,14 @@ const ProjectPage = () => {
         ) : (
           <MessageSquare className="h-4 w-4 shrink-0 text-accent/60" />
         )}
-        <span className="truncate overflow-x-auto scrollbar-hide">{chat.name}</span>
+        <span className="truncate overflow-x-auto scrollbar-hide">{chat.title}</span>
         <ArrowRight className="ml-auto h-3.5 w-3.5 text-surface-foreground/30 opacity-0 transition-opacity group-hover:opacity-100 shrink-0" />
       </button>
       <Tooltip>
         <TooltipTrigger asChild>
           <button
             onClick={() => {
-              if (isGemini) {
-                deleteGeminiChat(project.id, chat.id);
-              } else {
-                deleteChat(project.id, chat.id);
-              }
+              handleDeleteChat(chat._id);
             }}
             className="ml-2 rounded-lg p-1 text-surface-foreground/40 opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100 shrink-0"
           >
@@ -175,7 +392,7 @@ const ProjectPage = () => {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="font-heading text-2xl font-bold text-hero-foreground">{project.name}</h1>
+                <h1 className="font-heading text-2xl font-bold text-hero-foreground">{project?.name}</h1>
                 {isGemini && (
                   <span className="rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-medium text-accent">Gemini</span>
                 )}
@@ -185,22 +402,24 @@ const ProjectPage = () => {
               )}
               <p className="mt-1 flex items-center gap-1 text-xs text-surface-foreground/40">
                 <Calendar className="h-3 w-3" />
-                Created {project.createdAt.toLocaleDateString()}
+                Created {new Date(project.createdAt).toLocaleDateString()}
               </p>
             </div>
           </div>
 
           <div className="flex gap-2">
-            {isGeminiNativeProject && isGemini && (
+            {isGemini && (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     variant="ghost"
                     size="sm"
                     className="gap-2 rounded-xl text-primary hover:bg-primary/10 hover:text-primary border border-primary/20"
-                    onClick={handlePlugProjectToRag}
+                    onClick={
+                      (allFilesEmbedded ? () => navigate(`/rag/project/${ragProjectId}`) : handlePlugProjectToRag)
+                    }
                   >
-                    <Zap className="h-4 w-4" /> Plug to RAG
+                    <Zap className="h-4 w-4" /> {allFilesEmbedded ? "Open in RAG Workspace" : "Plug to RAG"}
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent className="max-w-xs">
@@ -212,7 +431,7 @@ const ProjectPage = () => {
               variant={isGemini ? "default" : "hero"}
               size="sm"
               className={`gap-2 rounded-xl ${isGemini ? "bg-accent text-accent-foreground hover:bg-accent/90 shadow-lg shadow-accent/25" : ""}`}
-              onClick={handleNewChat}
+              onClick={handleCreateChat}
             >
               <Plus className="h-4 w-4" /> New Chat
             </Button>
@@ -243,7 +462,7 @@ const ProjectPage = () => {
             >
               <AlertTriangle className="h-5 w-5 shrink-0 text-destructive" />
               <p className="flex-1 text-sm text-hero-foreground">
-                Delete <strong>{project.name}</strong>? This removes all documents and chats permanently.
+                Delete <strong>{project.name}</strong>? This removes all chats and documents not plugged into RAG Workspace permanently.
               </p>
               <Button variant="destructive" size="sm" className="rounded-xl" onClick={handleDeleteProject}>
                 Delete
@@ -273,7 +492,7 @@ const ProjectPage = () => {
                 </Tooltip>
               </div>
               <div className="flex items-center gap-1">
-                {project.documents.length > 0 && (
+                {documents?.length > 0 && (
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <button
@@ -290,14 +509,14 @@ const ProjectPage = () => {
                   variant="ghost"
                   size="sm"
                   className={`gap-1 rounded-xl ${accentCls}`}
-                  onClick={() => navigate(`${basePath}/project/${project.id}/upload`)}
+                  onClick={() => navigate(`${basePath}/project/${project._id}/upload`)}
                 >
                   <Upload className="h-4 w-4" /> Add
                 </Button>
               </div>
             </div>
 
-            {project.documents.length === 0 ? (
+            {documents?.length === 0 ? (
               <div className="mt-4 flex flex-col items-center rounded-2xl border border-dashed border-white/10 p-8 text-center">
                 <FileText className="h-8 w-8 text-surface-foreground/20" />
                 <p className="mt-2 text-sm text-surface-foreground/50">No documents uploaded yet.</p>
@@ -305,15 +524,15 @@ const ProjectPage = () => {
                   variant={isGemini ? "default" : "hero"}
                   size="sm"
                   className={`mt-3 gap-2 rounded-xl ${isGemini ? "bg-accent text-accent-foreground hover:bg-accent/90" : ""}`}
-                  onClick={() => navigate(`${basePath}/project/${project.id}/upload`)}
+                  onClick={() => navigate(`${basePath}/project/${project._id}/upload`)}
                 >
                   <Upload className="h-4 w-4" /> Upload Documents
                 </Button>
               </div>
             ) : (
-              <div className="mt-4 space-y-2 max-h-52 overflow-y-auto pr-1 scrollbar-thin">
-                {project.documents.map((doc) => (
-                  <DocumentRow key={doc.id} doc={doc} />
+              <div className={cn("mt-4 space-y-2 max-h-52 overflow-y-auto pr-1", isGemini ? "scrollbar-thin-gemini" : "scrollbar-thin scrollbar-thumb-white/20")}>
+                {documents?.map((doc) => (
+                  <DocumentRow key={doc.docId} doc={doc} />
                 ))}
               </div>
             )}
@@ -336,7 +555,7 @@ const ProjectPage = () => {
                 </Tooltip>
               </div>
               <div className="flex items-center gap-1">
-                {project.chats.length > 0 && (
+                {chats?.length > 0 && (
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <button
@@ -349,13 +568,13 @@ const ProjectPage = () => {
                     <TooltipContent>View all chats</TooltipContent>
                   </Tooltip>
                 )}
-                <Button variant="ghost" size="sm" className={`gap-1 rounded-xl ${accentCls}`} onClick={handleNewChat}>
+                <Button variant="ghost" size="sm" className={`gap-1 rounded-xl ${accentCls}`} onClick={handleCreateChat}>
                   <Plus className="h-4 w-4" /> New Chat
                 </Button>
               </div>
             </div>
 
-            {project.chats.length === 0 ? (
+            {chats?.length === 0 ? (
               <div className="mt-4 flex flex-col items-center rounded-2xl border border-dashed border-white/10 p-8 text-center">
                 <MessageSquare className="h-8 w-8 text-surface-foreground/20" />
                 <p className="mt-2 text-sm text-surface-foreground/50">No chats yet.</p>
@@ -363,15 +582,15 @@ const ProjectPage = () => {
                   variant={isGemini ? "default" : "hero"}
                   size="sm"
                   className={`mt-3 gap-2 rounded-xl ${isGemini ? "bg-accent text-accent-foreground hover:bg-accent/90" : ""}`}
-                  onClick={handleNewChat}
+                  onClick={handleCreateChat}
                 >
                   <Plus className="h-4 w-4" /> Start Chat
                 </Button>
               </div>
             ) : (
-              <div className="mt-4 space-y-2 max-h-52 overflow-y-auto pr-1 scrollbar-thin">
-                {project.chats.map((chat) => (
-                  <ChatRow key={chat.id} chat={chat} />
+              <div className={cn("mt-4 space-y-2 max-h-52 overflow-y-auto pr-1", isGemini ? "scrollbar-thin-gemini" : "scrollbar-thin scrollbar-thumb-white/20")}>
+                {chats?.map((chat) => (
+                  <ChatRow key={chat._id} chat={chat} />
                 ))}
               </div>
             )}
@@ -416,12 +635,12 @@ const ProjectPage = () => {
               <FileText className="h-5 w-5 text-primary" /> All Documents
             </DialogTitle>
             <DialogDescription className="text-surface-foreground/50">
-              {project.documents.length} document{project.documents.length !== 1 ? "s" : ""} in {project.name}
+              {documents?.length} document{documents?.length !== 1 ? "s" : ""} in {project.name}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-1">
-            {project.documents.map((doc) => (
-              <DocumentRow key={doc.id} doc={doc} />
+            {documents?.map((doc) => (
+              <DocumentRow key={doc.docId} doc={doc} />
             ))}
           </div>
           <div className="flex justify-end pt-2">
@@ -431,7 +650,7 @@ const ProjectPage = () => {
               className="gap-2 rounded-xl"
               onClick={() => {
                 setDocsModalOpen(false);
-                navigate(`${basePath}/project/${project.id}/upload`);
+                navigate(`${basePath}/project/${project._id}/upload`);
               }}
             >
               <Upload className="h-4 w-4" /> Upload More
@@ -448,12 +667,12 @@ const ProjectPage = () => {
               {isGemini ? <Sparkles className="h-5 w-5 text-accent" /> : <MessageSquare className="h-5 w-5 text-primary" />} All Chats
             </DialogTitle>
             <DialogDescription className="text-surface-foreground/50">
-              {project.chats.length} chat{project.chats.length !== 1 ? "s" : ""} in {project.name}
+              {chats?.length} chat{chats?.length !== 1 ? "s" : ""} in {project.name}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-1">
-            {project.chats.map((chat) => (
-              <ChatRow key={chat.id} chat={chat} />
+            {chats?.map((chat) => (
+              <ChatRow key={chat._id} chat={chat} />
             ))}
           </div>
           <div className="flex justify-end pt-2">
@@ -463,7 +682,7 @@ const ProjectPage = () => {
               className={`gap-2 rounded-xl ${isGemini ? "bg-accent text-accent-foreground hover:bg-accent/90" : ""}`}
               onClick={() => {
                 setChatsModalOpen(false);
-                handleNewChat();
+                handleCreateChat();
               }}
             >
               <Plus className="h-4 w-4" /> New Chat
@@ -471,6 +690,13 @@ const ProjectPage = () => {
           </div>
         </DialogContent>
       </Dialog>
+      <DocumentPreviewModal
+        isGemini={isGemini}
+        open={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+        document={previewDoc}
+        pageNumber={previewPage}
+      />
     </div>
   );
 };

@@ -1,5 +1,7 @@
 import { createContext, useContext, useState, ReactNode } from "react";
 
+import { useEffect } from "react";
+
 export interface ChatItem {
   id: string;
   name: string;
@@ -309,3 +311,221 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 }
 
 export { WorkspaceContext };
+
+// import {
+//   createContext,
+//   useContext,
+//   useEffect,
+//   useState,
+//   ReactNode,
+// } from "react";
+
+// import {
+//   getAllRagProjects,
+//   getProjectRagChats,
+//   getRagDocuments,
+// } from "@/helpers/api-communicator";
+
+// /* =========================
+//    TYPES
+// ========================= */
+
+// export type Citation = {
+//   chunk: string;
+//   source?: string;
+//   pageNumber?: number | null;
+//   preview?: string;
+//   score?: number;
+//   docId?: string;
+// };
+
+// export type Message = {
+//   role: "user" | "assistant";
+//   content: string;
+//   createdAt: string;
+//   citations?: Citation[];
+// };
+
+// export type RagChat = {
+//   _id: string;
+//   projectId: string;
+//   workspaceType: "rag" | "gemini";
+//   title: string;
+//   messages: Message[];
+//   createdAt: string;
+//   updatedAt: string;
+// };
+
+// export type RagDocument = {
+//   docId: string;
+//   filename: string;
+//   fileUrl: string;
+//   uploadedAt: string;
+//   size?: number;
+//   chunkCount?: number;
+// };
+
+// export type RagProject = {
+//   _id: string;
+//   name: string;
+//   description?: string;
+//   createdAt: string;
+//   updatedAt: string;
+
+//   chats: RagChat[];
+//   documents: RagDocument[];
+// };
+
+// /* =========================
+//    CONTEXT
+// ========================= */
+
+// type WorkspaceContextType = {
+//   projects: RagProject[];
+//   loading: boolean;
+
+//   refreshWorkspace: () => Promise<void>;
+
+//   setProjects:
+//     React.Dispatch<
+//       React.SetStateAction<RagProject[]>
+//     >;
+// };
+
+// const WorkspaceContext =
+//   createContext<WorkspaceContextType | null>(
+//     null
+//   );
+
+// /* =========================
+//    PROVIDER
+// ========================= */
+
+// export function WorkspaceProvider({
+//   children,
+// }: {
+//   children: ReactNode;
+// }) {
+
+//   const [projects, setProjects] =
+//     useState<RagProject[]>([]);
+
+//   const [loading, setLoading] =
+//     useState(true);
+
+//   /* =========================
+//      GLOBAL REFRESH
+//   ========================= */
+
+//   const refreshWorkspace =
+//     async () => {
+
+//       try {
+
+//         setLoading(true);
+
+//         const projectsRes =
+//           await getAllRagProjects();
+
+//         const rawProjects =
+//           projectsRes.projects || [];
+
+//         const hydratedProjects =
+//           await Promise.all(
+
+//             rawProjects.map(
+//               async (project: any) => {
+
+//                 try {
+
+//                   const chatsRes =
+//                     await getProjectRagChats(
+//                       project._id
+//                     );
+
+//                   const docsRes =
+//                     await getRagDocuments(
+//                       project._id
+//                     );
+
+//                   return {
+//                     ...project,
+
+//                     chats:
+//                       chatsRes.chats || [],
+
+//                     documents:
+//                       docsRes.documents || [],
+//                   };
+
+//                 } catch (err) {
+
+//                   console.error(
+//                     "PROJECT HYDRATION ERROR",
+//                     err
+//                   );
+
+//                   return {
+//                     ...project,
+//                     chats: [],
+//                     documents: [],
+//                   };
+//                 }
+//               }
+//             )
+//           );
+
+//         setProjects(hydratedProjects);
+
+//       } catch (err) {
+
+//         console.error(
+//           "WORKSPACE REFRESH ERROR",
+//           err
+//         );
+
+//       } finally {
+
+//         setLoading(false);
+//       }
+//     };
+
+//   /* =========================
+//      INITIAL LOAD
+//   ========================= */
+
+//   useEffect(() => {
+//     refreshWorkspace();
+//   }, []);
+
+//   return (
+//     <WorkspaceContext.Provider
+//       value={{
+//         projects,
+//         setProjects,
+//         loading,
+//         refreshWorkspace,
+//       }}
+//     >
+//       {children}
+//     </WorkspaceContext.Provider>
+//   );
+// }
+
+/* =========================
+   HOOK
+========================= */
+
+// export function useWorkspace() {
+
+//   const context =
+//     useContext(WorkspaceContext);
+
+//   if (!context) {
+//     throw new Error(
+//       "useWorkspace must be used inside WorkspaceProvider"
+//     );
+//   }
+
+//   return context;
+// }

@@ -4,13 +4,13 @@ import { RagProject } from "./project.model";
 // create new project
 export async function createProject(req: Request, res: Response) {
   try {
-    const { name } = req.body;
+    const { name, description } = req.body;
     if (!name) return res.status(400).json({ error: "name required" });
 
     // ownerId: optional - attach from req.user if you have auth middleware
     const ownerId = (req as any).user?.id || undefined;
 
-    const proj = await RagProject.create({ name, ownerId });
+    const proj = await RagProject.create({ name, description, ownerId });
     return res.json({ projectId: proj._id, project: proj });
   } catch (err) {
     console.error(err);
@@ -33,23 +33,55 @@ export async function listProjects(req: Request, res: Response) {
 }
 
 // delete project (and optionally delete associated chunks)
-import { ObjectId } from "mongodb";
 import { getRagCollection } from "./rag.db";
+import { getRagDocumentsCollection } from "./rag.documents.db";
+import { Chat } from "./rag.chat.model";
 
 export async function deleteProject(req: Request, res: Response) {
   try {
     const { id } = req.params;
-    if (!id) return res.status(400).json({ error: "project id required" });
 
+    // 1. Delete project
     await RagProject.findByIdAndDelete(id);
 
-    // Also delete chunks associated with this project
-    const col = getRagCollection();
-    await col.deleteMany({ projectId: id });
+    // 2. Delete chunks
+    const chunkCol = getRagCollection();
+    await chunkCol.deleteMany({ projectId: id });
+
+    // 3. Delete documents metadata
+    const docCol = getRagDocumentsCollection();
+    const docs = await docCol.find({ projectId: id }).toArray();
+
+    await docCol.deleteMany({ projectId: id });
+
+    // 4. Delete chats
+    await Chat.deleteMany({ projectId: id });
+
+    // 5. OPTIONAL: delete S3 files
+    // (we’ll add later if needed)
 
     return res.json({ success: true });
+
+  } catch (err) {
+    console.error("DELETE PROJECT ERROR:", err);
+    return res.status(500).json({ error: "delete project failed" });
+  }
+}
+
+export async function getProjectById(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+
+    const project = await RagProject.findById(id).lean();
+
+    if (!project) {
+      return res.status(404).json({ error: "Project not found" });
+    }
+
+    return res.json({ project });
+
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ error: "delete project failed" });
+    return res.status(500).json({ error: "get project failed" });
   }
 }
