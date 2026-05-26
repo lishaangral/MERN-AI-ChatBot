@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { getRagDocumentsCollection } from "./rag.documents.db";
 import { getRagCollection } from "./rag.db";
 import { ObjectId } from "mongodb";
+import { deleteFromS3 } from "../utils/s3"; // if exists
 
 export async function getDocumentsInProject(req: Request, res: Response) {
   try {
@@ -28,9 +29,6 @@ export async function getDocumentsInProject(req: Request, res: Response) {
     res.status(500).json({ error: "Failed to fetch documents" });
   }
 }
-
-import { deleteFromS3 } from "../utils/s3"; // if exists
-import { SignalZero } from "lucide-react";
 
 export async function deleteDocument(req: Request, res: Response) {
   try {
